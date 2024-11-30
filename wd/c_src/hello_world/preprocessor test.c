@@ -20,6 +20,12 @@ built-in macros:
 
     line on another line \
 __LINE__ == 22
+__LINE__BUT_NOT_REALLY
+
+__LINE__
+__LINE__ with stuff afterwards
+and now __LINE__ sandwiched with some other stuff
+and also__LINE__improperly
 
 single line comment:
 //comment
