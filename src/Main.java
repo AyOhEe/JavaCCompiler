@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Main {
-    public static void main(String[] args) throws CompilerException {
+    public static void main(String[] args) {
         if (args.length == 0){
             System.out.println("Java C Compiler: No arguments supplied. Use -h or --help for more information.");
             System.exit(-1);
@@ -103,8 +103,12 @@ public class Main {
                 sourceFiles.addAll(detectFiles(path, ".*[.]c"));   //*.c files in this directory or any subdirectory
             }
             catch (IOException e){
-                System.out.println("Failed to detect source files in " + path.toString());
+                System.out.println("Failed to detect source files in " + path);
             }
+        }
+        if (sourceFiles.isEmpty()) {
+            System.out.println("No source files detected to compile.");
+            System.exit(1);
         }
 
         if (verbose){
@@ -232,7 +236,7 @@ public class Main {
 
     private static ArrayList<Path> detectFiles(Path path, String regex) throws IOException {
         if (!Files.exists(path)){
-            System.out.println("Attempted to detect files in " + path.toString() + " but it does not exist");
+            System.out.println("Attempted to detect files in " + path + " but it does not exist");
             return new ArrayList<>();
         }
 

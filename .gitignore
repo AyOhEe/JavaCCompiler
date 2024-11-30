@@ -27,3 +27,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+
+/wd/out_*
+/wd/main
