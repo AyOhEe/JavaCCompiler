@@ -201,8 +201,6 @@ public class Main {
             deletePath(objOutputPath, "Failed to delete assembler output");
         }
 
-
-        System.out.println("\nCompilation finished. Executable output to " + linkerOutputName);
         System.exit(0);
     }
 
@@ -255,8 +253,7 @@ public class Main {
         }
 
         System.out.println(message);
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in))) {
             return reader.readLine().charAt(0) == 'y';
         }
         catch (IOException e){

@@ -1,9 +1,9 @@
-#if 0
+#if 1
 
 trigraphs:
     ??= == #
     ??( == [
-    ??/ == \ (extra text so these lines don't get squished)
+    ??/ == \ (extra text so these lines dont get squished)
     ??) == ]
     ??' == ^
     ??< == {
@@ -14,9 +14,12 @@ trigraphs:
 built-in macros:
     Line: __LINE__
     Filepath: __FILE__
-    Today's date, hopefully: __DATE__
+    Todays date, hopefully: __DATE__
     Compilation time: __TIME__
     STDC: __STDC__
+
+    line on another line \
+__LINE__ == 22
 
 single line comment:
 //comment
@@ -29,3 +32,7 @@ separator between multiline comments
 /* and this one is on a single line */
 
 #endif
+
+int main() {
+    return __LINE__;
+}
