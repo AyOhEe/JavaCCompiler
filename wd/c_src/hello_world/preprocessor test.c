@@ -58,13 +58,6 @@ there is a comment /* right here that should be */ removed here, but should leav
 
 /*/ this is a valid comment */ there are two comments on this line /* here's the other one*/ and some text afterwards /* i lied there are three */
 
-shit ton of empty space
-
-
-
-
-
-
 #endif
 
 int main() {

@@ -61,7 +61,7 @@ public class Preprocessor {
             return lines;
         }
 
-        List<String> modifiedLines = new ArrayList<String>(lines);
+        List<String> modifiedLines = new ArrayList<>(lines);
 
         replaceTrigraphs(modifiedLines, verbose); //phase 1: trigraph replacement
         replaceLineMacro(modifiedLines, verbose); //in between phase: replace __LINE__ macros before source line merging
@@ -146,7 +146,7 @@ public class Preprocessor {
             }
 
             if(multilineBegin != -1) {
-                lines.set(i, line.substring(0, multilineBegin));
+                lines.set(i, line.substring(0, multilineBegin) + "\n");
             }
 
             //last line was a comment and this line is entirely a comment. remove it
