@@ -23,6 +23,9 @@ public class Preprocessor {
         List<String> lines = null;
         try {
             lines = Files.readAllLines(sf);
+            for(int i = 1; i < lines.size(); ++i) {
+                lines.set(i - 1, lines.get(i - 1) + "\n");
+            }
         } catch (IOException e) {
             e.printStackTrace();
             System.out.println("Failed to open " + sf);
@@ -35,11 +38,8 @@ public class Preprocessor {
 
         Path compilationUnitPath = Paths.get(ppOutputPath.toAbsolutePath().toString(), getUnitFilename(sf));
         try (FileWriter writer = new FileWriter(compilationUnitPath.toFile())) {
-            if(!processedLines.isEmpty()) {
-                writer.write(processedLines.getFirst());
-            }
-            for(int i = 1; i < processedLines.size(); ++i) {
-                writer.write("\n" + processedLines.get(i));
+            for (String processedLine : processedLines) {
+                writer.write(processedLine);
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -57,11 +57,16 @@ public class Preprocessor {
     }
 
     private static List<String> preprocessLines(List<String> lines, ArrayList<Path> includePaths, boolean verbose) {
+        if(lines.isEmpty()){
+            return lines;
+        }
+
         List<String> modifiedLines = new ArrayList<String>(lines);
 
         replaceTrigraphs(modifiedLines, verbose); //phase 1: trigraph replacement
         replaceLineMacro(modifiedLines, verbose); //in between phase: replace __LINE__ macros before source line merging
-        //phase 2: eof == newline enforcement and \ + \n removal
+        mergeSourceLines(modifiedLines, verbose); //phase 2: eof == newline enforcement and \ + \n removal
+        ensureEOFNewline(modifiedLines, verbose);
         //phase 3: comment removal
         //phase 4: preprocessing directive execution and macro expansion. #include + 1-4 happens here
 
@@ -71,9 +76,29 @@ public class Preprocessor {
         return modifiedLines;
     }
 
-    private static void replaceLineMacro(List<String> modifiedLines, boolean verbose) {
-        for (int i = 0; i < modifiedLines.size(); ++i) {
-            modifiedLines.set(i, modifiedLines.get(i).replaceAll("\\b__LINE__\\b", Integer.toString(i + 1)));
+    private static void ensureEOFNewline(List<String> lines, boolean verbose) {
+        String lastLine = lines.getLast();
+        if (lastLine.isEmpty()) {
+            lines.set(lines.size() - 1, "\n");
+        } else {
+            if (lastLine.charAt(lastLine.length() - 1) != '\n') {
+                lines.set(lines.size() - 1, lastLine + "\n");
+            }
+        }
+
+        if (lastLine.contains("\\\n")) {
+            //TODO warning
+            System.out.println("Backslash-newline at end of file");
+        }
+    }
+
+    private static void mergeSourceLines(List<String> lines, boolean verbose) {
+        lines.replaceAll(s -> s.replace("\\\n", ""));
+    }
+
+    private static void replaceLineMacro(List<String> lines, boolean verbose) {
+        for (int i = 0; i < lines.size(); ++i) {
+            lines.set(i, lines.get(i).replaceAll("\\b__LINE__\\b", Integer.toString(i + 1)));
         }
     }
 
