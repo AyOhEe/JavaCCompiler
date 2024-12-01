@@ -9,17 +9,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Preprocessor {
-    public static ArrayList<Path> preprocess(ArrayList<Path> sourceFiles, ArrayList<Path> includePaths, Path ppOutputPath, boolean yesMode, boolean verbose) throws CompilerException {
+    public static ArrayList<Path> preprocess(ArrayList<Path> sourceFiles, ArrayList<Path> includePaths, PreprocessingContext context, Path ppOutputPath, boolean yesMode, boolean verbose) throws CompilerException {
         ArrayList<Path> compilationUnits = new ArrayList<>();
         for (Path sf : sourceFiles) {
-            Path result = preprocessFile(sf, includePaths, ppOutputPath, verbose);
+            Path result = preprocessFile(sf, includePaths, context, ppOutputPath, verbose);
             compilationUnits.add(result);
         }
 
         return compilationUnits;
     }
 
-    private static Path preprocessFile(Path sf, ArrayList<Path> includePaths, Path ppOutputPath, boolean verbose) throws CompilerException {
+    private static Path preprocessFile(Path sf, ArrayList<Path> includePaths, PreprocessingContext context, Path ppOutputPath, boolean verbose) throws CompilerException {
         List<String> lines = null;
         try {
             lines = Files.readAllLines(sf);
@@ -33,7 +33,7 @@ public class Preprocessor {
         }
 
 
-        List<String> processedLines = preprocessLines(lines, includePaths, verbose);
+        List<String> processedLines = preprocessLines(lines, includePaths, context, verbose);
 
 
         Path compilationUnitPath = Paths.get(ppOutputPath.toAbsolutePath().toString(), getUnitFilename(sf));
@@ -56,24 +56,109 @@ public class Preprocessor {
         return filename.substring(0, filename.length() - 2) + ".i";
     }
 
-    private static List<String> preprocessLines(List<String> lines, ArrayList<Path> includePaths, boolean verbose) throws CompilerException {
+    private static List<String> preprocessLines(List<String> lines, ArrayList<Path> includePaths, PreprocessingContext context, boolean verbose) throws CompilerException {
         if(lines.isEmpty()){
             return lines;
         }
 
         List<String> modifiedLines = new ArrayList<>(lines);
 
-        replaceTrigraphs(modifiedLines, verbose); //phase 1: trigraph replacement
-        replaceLineMacro(modifiedLines, verbose); //in between phase: replace __LINE__ macros before source line merging
-        mergeSourceLines(modifiedLines, verbose); //phase 2: eof == newline enforcement and \ + \n removal
+        //phase 1: trigraph replacement
+        replaceTrigraphs(modifiedLines, verbose);
+
+        //phase 2: eof == newline enforcement and \ + \n removal
+        mergeSourceLines(modifiedLines, verbose);
         ensureEOFNewline(modifiedLines, verbose);
-        removeComments(modifiedLines, verbose);   //phase 3: comment removal
+
+        //phase 3: comment removal
+        removeComments(modifiedLines, verbose);
         //phase 4: preprocessing directive execution and macro expansion. #include + 1-4 happens here
+        executeDirectives(modifiedLines, includePaths, context, verbose);
 
         //phase 5 and 6 technically count as preprocessor responsibilities,
         //but practically belong to the compiler and should be handled after tokenisation
 
         return modifiedLines;
+    }
+
+    private static void executeDirectives(List<String> lines, List<Path> includePaths, PreprocessingContext context, boolean verbose) {
+        for (int i = 0; i < lines.size(); /*deliberately empty - directives move lines themselves*/) {
+            String trimmed = lines.get(i).stripLeading();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+
+            String directive = extractDirective(trimmed);
+            if(!directive.startsWith("#")) {
+                lines.set(i, context.doReplacement(lines.get(i)));
+                i += 1;
+                continue;
+            }
+
+            //#line directives are ignored - those are for the compiler
+            i = switch (directive) {
+                case "#if" -> ifDirective(trimmed, i, lines, context, verbose);
+                case "#ifdef" -> ifdefDirective(trimmed, i, lines, context, verbose);
+                case "#ifndef" -> ifndefDirective(trimmed, i, lines, context, verbose);
+                case "#elif" -> elifDirective(trimmed, i, lines, context, verbose);
+                case "#else" -> elseDirective(trimmed, i, lines, context, verbose);
+                case "#endif" -> endifDirective(trimmed, i, lines, context, verbose);
+
+                case "#include" -> includeDirective(trimmed, i, lines, includePaths, context, verbose);
+                case "#define" -> defineDirective(trimmed, context, verbose);
+                case "#undef" -> undefineDirective(trimmed, context, verbose);
+                case "#error" -> errorDirective(trimmed, i, context, verbose);
+                case "#pragma" -> pragmaDirective(trimmed, context, verbose);
+              //case "": # empty statement - should be ignored
+                default -> i + 1;
+            };
+        }
+    }
+
+    private static int ifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+    }
+
+    private static int ifdefDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+    }
+
+    private static int ifndefDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+    }
+
+    private static int elifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+    }
+
+    private static int elseDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+    }
+
+    private static int endifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+    }
+
+    private static int includeDirective(String trimmed, int i, List<String> lines, List<Path> includePaths, PreprocessingContext context, boolean verbose) {
+    }
+
+    private static int defineDirective(String trimmed, PreprocessingContext context, boolean verbose) {
+    }
+
+    private static int undefineDirective(String trimmed, PreprocessingContext context, boolean verbose) {
+    }
+
+    private static int errorDirective(String trimmed, int i, PreprocessingContext context, boolean verbose) {
+    }
+
+    private static int pragmaDirective(String trimmed, PreprocessingContext context, boolean verbose) {
+    }
+
+
+    private static String extractDirective(String trimmed) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < trimmed.length(); ++i) {
+            if(Character.isWhitespace(trimmed.charAt(i))) {
+                break;
+            }
+            sb.append(trimmed.charAt(i));
+        }
+
+        return sb.toString();
     }
 
     private static void removeComments(List<String> lines, boolean verbose) throws CompilerException {
@@ -163,7 +248,7 @@ public class Preprocessor {
         if (lastLine.isEmpty()) {
             lines.set(lines.size() - 1, "\n");
         } else {
-            if (lastLine.charAt(lastLine.length() - 1) != '\n') {
+            if (!lastLine.endsWith("\n")) {
                 lines.set(lines.size() - 1, lastLine + "\n");
             }
         }
@@ -188,12 +273,6 @@ public class Preprocessor {
         }
     }
 
-    private static void replaceLineMacro(List<String> lines, boolean verbose) {
-        for (int i = 0; i < lines.size(); ++i) {
-            lines.set(i, lines.get(i).replaceAll("\\b__LINE__\\b", Integer.toString(i + 1)));
-        }
-    }
-
     private static void replaceTrigraphs(List<String> lines, boolean verbose) {
         lines.replaceAll(s -> s
                 .replace("??=", "#")
@@ -206,5 +285,4 @@ public class Preprocessor {
                 .replace("??>", "}")
                 .replace("??-", "~"));
     }
-
 }

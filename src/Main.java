@@ -32,6 +32,7 @@ public class Main {
         Path ppOutputPath = Path.of("out_pp/").toAbsolutePath();
         Path asmOutputPath = Path.of("out_asm/").toAbsolutePath();
         Path objOutputPath = Path.of("out_obj/").toAbsolutePath();
+        Path ctxPath = Path.of("FLAGS.h").toAbsolutePath();
 
         //parse command line arguments
         for (int i = 0; i < args.length; i++){
@@ -82,6 +83,7 @@ public class Main {
                 case "-co", "--compiler-output" -> asmOutputPath = Path.of(args[i + 1]).toAbsolutePath();
                 case "-ao", "--assembler-output" -> objOutputPath = Path.of(args[i + 1]).toAbsolutePath();
                 case "-o", "-lo", "--linker-output" -> linkerOutputName = Path.of(args[i + 1]).toAbsolutePath();
+                case "--context" -> ctxPath = Path.of(args[i + 1]).toAbsolutePath();
             }
         }
 
@@ -141,6 +143,7 @@ public class Main {
             System.out.println("Linker output path: " + (link ? linkerOutputName : "Disabled") + "\n");
         }
 
+        PreprocessingContext context = findPPCtx(ctxPath, verbose);
 
         //preprocess to compilation units
         //PREPROCESSING
@@ -148,7 +151,7 @@ public class Main {
         ArrayList<Path> ppuFiles;
         if(cleanup || confirmUserIntent(msg, yesMode)) {
             refreshPath(ppOutputPath, "Unable to refresh preprocessor output path at " + ppOutputPath);
-            ppuFiles = Preprocessor.preprocess(sourceFiles, includePaths, ppOutputPath, yesMode, verbose);
+            ppuFiles = Preprocessor.preprocess(sourceFiles, includePaths, context, ppOutputPath, yesMode, verbose);
             System.out.println("Preprocessing successfully finished.");
         } else {
             System.out.println("Preprocessing aborted");
@@ -208,12 +211,27 @@ public class Main {
         System.exit(0);
     }
 
-    public static void showHelp() {
+    private static PreprocessingContext findPPCtx(Path ctxPath, boolean verbose) throws CompilerException {
+        PreprocessingContext ctx = new PreprocessingContext();
+        if (Files.exists(ctxPath)) {
+            if (verbose) {
+                System.out.println("Context file found. Loading constants via preprocessor...");
+            }
+            ArrayList<Path> sourcePaths = new ArrayList<>();
+            sourcePaths.add(ctxPath);
+            Preprocessor.preprocess(sourcePaths, new ArrayList<>(), ctx, Path.of("/tmp"), true, false);
+        } else if (verbose) {
+            System.out.println("Context file not found or not supplied. Using blank context.");
+        }
+        return ctx;
+    }
+
+    private static void showHelp() {
         //TODO help message
         System.out.println("Help message not written yet :/");
     }
 
-    public static void refreshPath(Path path, String failMsg) {
+    private static void refreshPath(Path path, String failMsg) {
         try {
             Runtime.getRuntime().exec(new String[] {"rm", "-r", path.toString()});
             Runtime.getRuntime().exec(new String[] {"mkdir", path.toString()});
@@ -224,7 +242,7 @@ public class Main {
         }
     }
 
-    public static void deletePath(Path path, String failMsg) {
+    private static void deletePath(Path path, String failMsg) {
         try {
             Runtime.getRuntime().exec(new String[] {"rm", "-r", path.toString()});
         }
@@ -247,10 +265,10 @@ public class Main {
         }
     }
 
-    public static boolean confirmUserIntent(String message, boolean yesMode) {
+    private static boolean confirmUserIntent(String message, boolean yesMode) {
         return confirmUserIntent(message, yesMode, false);
     }
-    public static boolean confirmUserIntent(String message, boolean yesMode, boolean safeOption){
+    private static boolean confirmUserIntent(String message, boolean yesMode, boolean safeOption){
         if (yesMode){
             System.out.println("Yes mode: Ignoring prompt \"" + message + "\"");
             return true;
