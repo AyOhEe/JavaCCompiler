@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws CompilerException {
         if (args.length == 0){
             System.out.println("Java C Compiler: No arguments supplied. Use -h or --help for more information.");
             System.exit(-1);
