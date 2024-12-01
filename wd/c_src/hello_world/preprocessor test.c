@@ -27,6 +27,15 @@ __LINE__ with stuff afterwards
 and now __LINE__ sandwiched with some other stuff
 and also__LINE__improperly
 
+multiple \
+continued \
+lines \
+which \
+hopefully \
+form \
+one \
+line
+
 single line comments:
 //comment
 comment right after a line;//just like this
@@ -61,3 +70,7 @@ shit ton of empty space
 int main() {
     return __LINE__;
 }
+
+//continued lines \
+at the end again \
+but still well-formed

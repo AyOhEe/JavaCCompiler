@@ -175,7 +175,17 @@ public class Preprocessor {
     }
 
     private static void mergeSourceLines(List<String> lines, boolean verbose) {
-        lines.replaceAll(s -> s.replace("\\\n", ""));
+        for (int i = lines.size() - 2; i > -1; --i) {
+            String line = lines.get(i);
+            if (line.length() < 2) {
+                continue;
+            }
+
+            if (line.endsWith("\\\n")) {
+                lines.set(i, line.substring(0, line.length() - 2) + lines.get(i + 1));
+                lines.set(i + 1, "\n");
+            }
+        }
     }
 
     private static void replaceLineMacro(List<String> lines, boolean verbose) {
