@@ -145,7 +145,7 @@ public class Preprocessor {
         for (; j < lines.size(); ++j) {
             String jLine = lines.get(j).stripLeading();
             String directive = extractDirective(jLine);
-            if (directive.contentEquals("#if")) {
+            if (directive.contentEquals("#if") || directive.contentEquals("#ifdef") || directive.contentEquals("#ifndef")) {
                 depth += 1;
             } else if (directive.contentEquals("#endif")) {
                 depth -= 1;
@@ -170,7 +170,8 @@ public class Preprocessor {
         }
 
 
-        if (context.evaluateConstexprs(trimmed).toLowerCase().contentEquals("#if 1\n")) {
+        String evaluatedLine = context.evaluateConstexprs(trimmed).toLowerCase().replaceAll("[^\\S\\n]+", " ");
+        if (evaluatedLine.startsWith("#if 1")) {
             //keep the clause, get rid of the rest of the block
             lines.set(i, "\n");
             for (int k = currentClauseEnding; k < blockEnding + 1; ++k) {
@@ -179,7 +180,7 @@ public class Preprocessor {
 
             return i + 1;
         }
-        else if(context.evaluateConstexprs(trimmed).toLowerCase().contentEquals("#if 0\n")) {
+        else if(evaluatedLine.startsWith("#if 0")) {
             //get rid of the clause, modify the #else/#elif to an #if 1/#elif {condition}
             for (int k = i; k < currentClauseEnding; ++k) {
                 lines.set(k, "\n");

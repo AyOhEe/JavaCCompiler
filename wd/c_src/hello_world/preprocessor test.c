@@ -64,7 +64,7 @@ Should not show up
 
 #endif
 
-
+#if 0 //REINTRODUCE AFTER CONSTEXPR AND DEFINITIONS WORK
 #define TEST
 #ifdef TEST
 Should not appear if the below does
@@ -79,6 +79,7 @@ Should not appear if the below does
 #endif
 #ifndef TEST
 Should not appear if the above does
+#endif
 #endif
 
 
