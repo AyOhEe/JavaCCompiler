@@ -13,6 +13,7 @@ public class PreprocessingContext {
     }
 
     public void define(String identifier, String value) {
+        //TODO reject reserved identifiers
         macros.put(identifier, PreprocessorDefinition.parse(value));
     }
 

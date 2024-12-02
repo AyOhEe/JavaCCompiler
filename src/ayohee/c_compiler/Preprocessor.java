@@ -202,13 +202,13 @@ public class Preprocessor {
     }
 
     private static int ifdefDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
-        //TODO this
-        return i + 1;
+        lines.set(i, "#if defined(" + trimmed.substring(7, trimmed.length() - 1) + ")\n");
+        return i;
     }
 
     private static int ifndefDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
-        //TODO this
-        return i + 1;
+        lines.set(i, "#if !defined(" + trimmed.substring(8, trimmed.length() - 1) + ")\n");
+        return i;
     }
 
     private static int elifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {

@@ -1,4 +1,4 @@
-#if 0
+#if 1
 
 trigraphs:
     ??= == #
@@ -63,6 +63,24 @@ there is a comment /* right here that should be */ removed here, but should leav
 Should not show up
 
 #endif
+
+
+#define TEST
+#ifdef TEST
+Should not appear if the below does
+#endif
+#ifndef TEST
+Should not appear if the above does
+#endif
+
+#undef TEST
+#ifdef TEST
+Should not appear if the below does
+#endif
+#ifndef TEST
+Should not appear if the above does
+#endif
+
 
 #define FUNCTION_LIKE(foo) (foo + foo)
 #define TEST_DEFINITION
