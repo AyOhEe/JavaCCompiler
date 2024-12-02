@@ -1,4 +1,4 @@
-#if 1
+#if 0
 
 trigraphs:
     ??= == #
@@ -58,7 +58,11 @@ there is a comment /* right here that should be */ removed here, but should leav
 
 /*/ this is a valid comment */ there are two comments on this line /* here's the other one*/ and some text afterwards /* i lied there are three */
 
-//#endif
+#elif 1
+
+Should not show up
+
+#endif
 
 #define FUNCTION_LIKE(foo) (foo + foo)
 #define TEST_DEFINITION

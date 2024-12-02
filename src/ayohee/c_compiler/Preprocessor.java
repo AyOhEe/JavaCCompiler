@@ -136,9 +136,69 @@ public class Preprocessor {
         }
     }
 
-    private static int ifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
-        //TODO this
-        return i + 1;
+    private static int ifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
+        //find else/elif/endif
+        int depth = 0;
+        int j = i; //declared outside to keep the value after the loop finishes
+        int currentClauseEnding = -1;
+        int blockEnding = -1;
+        for (; j < lines.size(); ++j) {
+            String jLine = lines.get(j).stripLeading();
+            String directive = extractDirective(jLine);
+            if (directive.contentEquals("#if")) {
+                depth += 1;
+            } else if (directive.contentEquals("#endif")) {
+                depth -= 1;
+            }
+
+            if (depth == 1 && (directive.contentEquals("#else") || directive.contentEquals("#elif"))) {
+                if (currentClauseEnding == -1) {
+                    currentClauseEnding = j;
+                }
+            }
+
+            if (depth == 0) {
+                if (currentClauseEnding == -1) {
+                    currentClauseEnding = j;
+                }
+                blockEnding = j;
+                break;
+            }
+        }
+        if (blockEnding == -1) {
+            throw new CompilerException("#if with no corresponding #endif");
+        }
+
+
+        if (context.evaluateConstexprs(trimmed).toLowerCase().contentEquals("#if 1\n")) {
+            //keep the clause, get rid of the rest of the block
+            lines.set(i, "\n");
+            for (int k = currentClauseEnding; k < blockEnding + 1; ++k) {
+                lines.set(k, "\n");
+            }
+
+            return i + 1;
+        }
+        else if(context.evaluateConstexprs(trimmed).toLowerCase().contentEquals("#if 0\n")) {
+            //get rid of the clause, modify the #else/#elif to an #if 1/#elif {condition}
+            for (int k = i; k < currentClauseEnding; ++k) {
+                lines.set(k, "\n");
+            }
+
+            String line = lines.get(currentClauseEnding).stripLeading();
+            String directive = extractDirective(line);
+
+            if (directive.contentEquals("#elif")) {
+                lines.set(currentClauseEnding, "#if" + line.substring(5));
+            } else if (directive.contentEquals("#else")) {
+                lines.set(currentClauseEnding, "#if 1\n");
+            } else if (directive.contentEquals("#endif")) {
+                lines.set(currentClauseEnding, "\n");
+            }
+            return currentClauseEnding;
+        } else {
+            throw new CompilerException("#if directive had non-evaluatable condition: " + trimmed);
+        }
     }
 
     private static int ifdefDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {

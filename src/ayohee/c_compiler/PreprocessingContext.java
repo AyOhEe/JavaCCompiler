@@ -24,7 +24,12 @@ public class PreprocessingContext {
         for(Map.Entry<String, PreprocessorDefinition> entry : macros.entrySet()) {
             line = entry.getValue().replaceInstances(entry.getKey(), line, verbose);
         }
-        //TODO constexpr evaluations
+        line = evaluateConstexprs(line);
         return line;
+    }
+
+    public String evaluateConstexprs(String expression) {
+        //TODO this
+        return expression;
     }
 }
