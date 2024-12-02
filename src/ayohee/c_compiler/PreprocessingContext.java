@@ -1,6 +1,7 @@
 package ayohee.c_compiler;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class PreprocessingContext {
     private HashMap<String, PreprocessorDefinition> macros = new HashMap<>();
@@ -19,8 +20,11 @@ public class PreprocessingContext {
         macros.remove(identifier);
     }
 
-    public String doReplacement(String line) {
-        //TODO
+    public String doReplacement(String line, boolean verbose) {
+        for(Map.Entry<String, PreprocessorDefinition> entry : macros.entrySet()) {
+            line = entry.getValue().replaceInstances(entry.getKey(), line, verbose);
+        }
+        //TODO constexpr evaluations
         return line;
     }
 }

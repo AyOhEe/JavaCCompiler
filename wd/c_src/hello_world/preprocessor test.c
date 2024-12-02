@@ -58,10 +58,20 @@ there is a comment /* right here that should be */ removed here, but should leav
 
 /*/ this is a valid comment */ there are two comments on this line /* here's the other one*/ and some text afterwards /* i lied there are three */
 
-#endif
+//#endif
+
+#define FUNCTION_LIKE(foo) (foo + foo)
+#define TEST_DEFINITION
+
+TEST_DEFINITION
+
+#undef TEST_DEFINITION
+
+TEST_DEFINITION
+
 
 int main() {
-    return __LINE__;
+    return FLAG_ONLY_DEFINED;
 }
 
 //continued lines \

@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+
 public class Preprocessor {
     public static ArrayList<Path> preprocess(ArrayList<Path> sourceFiles, ArrayList<Path> includePaths, PreprocessingContext context, Path ppOutputPath, boolean yesMode, boolean verbose) throws CompilerException {
         ArrayList<Path> compilationUnits = new ArrayList<>();
@@ -99,7 +100,7 @@ public class Preprocessor {
         return modifiedLines;
     }
 
-    private static void executeDirectives(List<String> lines, List<Path> includePaths, PreprocessingContext context, boolean verbose) {
+    private static void executeDirectives(List<String> lines, List<Path> includePaths, PreprocessingContext context, boolean verbose) throws CompilerException {
         for (int i = 0; i < lines.size(); /*deliberately empty - directives move lines themselves*/) {
             String trimmed = lines.get(i).stripLeading();
             if (trimmed.isEmpty()) {
@@ -109,7 +110,7 @@ public class Preprocessor {
 
             String directive = extractDirective(trimmed);
             if(!directive.startsWith("#")) {
-                lines.set(i, context.doReplacement(lines.get(i)));
+                lines.set(i, context.doReplacement(lines.get(i), verbose));
                 ++i;
                 continue;
             }
@@ -124,10 +125,10 @@ public class Preprocessor {
                 case "#endif" -> endifDirective(trimmed, i, lines, context, verbose);
 
                 case "#include" -> includeDirective(trimmed, i, lines, includePaths, context, verbose);
-                case "#define" -> defineDirective(trimmed, i, context, verbose);
-                case "#undef" -> undefineDirective(trimmed, i, context, verbose);
-                case "#error" -> errorDirective(trimmed, i, context, verbose);
-                case "#pragma" -> pragmaDirective(trimmed, i, context, verbose);
+                case "#define" -> defineDirective(trimmed, i, lines, context, verbose);
+                case "#undef" -> undefineDirective(trimmed, i, lines, context, verbose);
+                case "#error" -> errorDirective(trimmed, i, lines, context, verbose);
+                case "#pragma" -> pragmaDirective(trimmed, i, lines, context, verbose);
               //case "": # empty statement - should be ignored
 
                 default -> i + 1;
@@ -136,46 +137,59 @@ public class Preprocessor {
     }
 
     private static int ifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+        //TODO this
         return i + 1;
     }
 
     private static int ifdefDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+        //TODO this
         return i + 1;
     }
 
     private static int ifndefDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+        //TODO this
         return i + 1;
     }
 
-    private static int elifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
-        return i + 1;
+    private static int elifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
+        throw new CompilerException("Unmatched #elif directive");
     }
 
-    private static int elseDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
-        return i + 1;
+    private static int elseDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
+        throw new CompilerException("Unmatched #else directive");
     }
 
-    private static int endifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
-        return i + 1;
+    private static int endifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
+        throw new CompilerException("Unmatched #endif directive");
     }
 
     private static int includeDirective(String trimmed, int i, List<String> lines, List<Path> includePaths, PreprocessingContext context, boolean verbose) {
+        //TODO this
         return i + 1;
     }
 
-    private static int defineDirective(String trimmed, int i, PreprocessingContext context, boolean verbose) {
+    private static int defineDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
+        String identifier = PreprocessorDefinition.findIdentifier(trimmed, 7);
+        context.define(identifier, PreprocessorDefinition.extractReplacementList(trimmed));
+        lines.set(i, "\n");
         return i + 1;
     }
 
-    private static int undefineDirective(String trimmed, int i, PreprocessingContext context, boolean verbose) {
+    private static int undefineDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
+        String identifier = PreprocessorDefinition.findIdentifier(trimmed, 7);
+        context.undefine(identifier);
+
+        lines.set(i, "\n");
         return i + 1;
     }
 
-    private static int errorDirective(String trimmed, int i, PreprocessingContext context, boolean verbose) {
-        return i + 1;
+    private static int errorDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
+        throw new CompilerException(trimmed);
     }
 
-    private static int pragmaDirective(String trimmed, int i, PreprocessingContext context, boolean verbose) {
+    private static int pragmaDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+        //currently, no pragma directives do anything.
+        lines.set(i, "\n");
         return i + 1;
     }
 
@@ -191,6 +205,7 @@ public class Preprocessor {
 
         return sb.toString();
     }
+
 
     private static void removeComments(List<String> lines, boolean verbose) throws CompilerException {
         boolean inMultiline = false;

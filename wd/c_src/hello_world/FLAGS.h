@@ -1,1 +1,2 @@
 #define FLAGS_WORKED 1
+#define FLAG_ONLY_DEFINED
