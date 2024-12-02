@@ -19,6 +19,24 @@ public class Preprocessor {
         return compilationUnits;
     }
 
+
+    public static void loadContext(Path sf, PreprocessingContext context, boolean verbose) throws CompilerException {
+        List<String> lines = null;
+        try {
+            lines = Files.readAllLines(sf);
+            for(int i = 1; i < lines.size(); ++i) {
+                lines.set(i - 1, lines.get(i - 1) + "\n");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Failed to open " + sf);
+            System.exit(2);
+        }
+
+
+        preprocessLines(lines, new ArrayList<>(), context, verbose);
+    }
+
     private static Path preprocessFile(Path sf, ArrayList<Path> includePaths, PreprocessingContext context, Path ppOutputPath, boolean verbose) throws CompilerException {
         List<String> lines = null;
         try {

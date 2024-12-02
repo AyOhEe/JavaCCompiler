@@ -217,9 +217,7 @@ public class Main {
             if (verbose) {
                 System.out.println("Context file found. Loading constants via preprocessor...");
             }
-            ArrayList<Path> sourcePaths = new ArrayList<>();
-            sourcePaths.add(ctxPath);
-            Preprocessor.preprocess(sourcePaths, new ArrayList<>(), ctx, Path.of("/tmp"), true, false);
+            Preprocessor.loadContext(ctxPath, ctx, verbose);
         } else if (verbose) {
             System.out.println("Context file not found or not supplied. Using blank context.");
         }
