@@ -85,13 +85,14 @@ public class Preprocessor {
         for (int i = 0; i < lines.size(); /*deliberately empty - directives move lines themselves*/) {
             String trimmed = lines.get(i).stripLeading();
             if (trimmed.isEmpty()) {
+                ++i;
                 continue;
             }
 
             String directive = extractDirective(trimmed);
             if(!directive.startsWith("#")) {
                 lines.set(i, context.doReplacement(lines.get(i)));
-                i += 1;
+                ++i;
                 continue;
             }
 
@@ -105,47 +106,59 @@ public class Preprocessor {
                 case "#endif" -> endifDirective(trimmed, i, lines, context, verbose);
 
                 case "#include" -> includeDirective(trimmed, i, lines, includePaths, context, verbose);
-                case "#define" -> defineDirective(trimmed, context, verbose);
-                case "#undef" -> undefineDirective(trimmed, context, verbose);
+                case "#define" -> defineDirective(trimmed, i, context, verbose);
+                case "#undef" -> undefineDirective(trimmed, i, context, verbose);
                 case "#error" -> errorDirective(trimmed, i, context, verbose);
-                case "#pragma" -> pragmaDirective(trimmed, context, verbose);
+                case "#pragma" -> pragmaDirective(trimmed, i, context, verbose);
               //case "": # empty statement - should be ignored
+
                 default -> i + 1;
             };
         }
     }
 
     private static int ifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+        return i + 1;
     }
 
     private static int ifdefDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+        return i + 1;
     }
 
     private static int ifndefDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+        return i + 1;
     }
 
     private static int elifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+        return i + 1;
     }
 
     private static int elseDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+        return i + 1;
     }
 
     private static int endifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+        return i + 1;
     }
 
     private static int includeDirective(String trimmed, int i, List<String> lines, List<Path> includePaths, PreprocessingContext context, boolean verbose) {
+        return i + 1;
     }
 
-    private static int defineDirective(String trimmed, PreprocessingContext context, boolean verbose) {
+    private static int defineDirective(String trimmed, int i, PreprocessingContext context, boolean verbose) {
+        return i + 1;
     }
 
-    private static int undefineDirective(String trimmed, PreprocessingContext context, boolean verbose) {
+    private static int undefineDirective(String trimmed, int i, PreprocessingContext context, boolean verbose) {
+        return i + 1;
     }
 
     private static int errorDirective(String trimmed, int i, PreprocessingContext context, boolean verbose) {
+        return i + 1;
     }
 
-    private static int pragmaDirective(String trimmed, PreprocessingContext context, boolean verbose) {
+    private static int pragmaDirective(String trimmed, int i, PreprocessingContext context, boolean verbose) {
+        return i + 1;
     }
 
 

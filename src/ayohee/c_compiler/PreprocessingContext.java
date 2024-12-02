@@ -21,5 +21,6 @@ public class PreprocessingContext {
 
     public String doReplacement(String line) {
         //TODO
+        return line;
     }
 }
