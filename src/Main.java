@@ -143,7 +143,6 @@ public class Main {
             System.out.println("Linker output path: " + (link ? linkerOutputName : "Disabled") + "\n");
         }
 
-        PreprocessingContext context = findPPCtx(ctxPath, verbose);
 
         //preprocess to compilation units
         //PREPROCESSING
@@ -151,7 +150,7 @@ public class Main {
         ArrayList<Path> ppuFiles;
         if(cleanup || confirmUserIntent(msg, yesMode)) {
             refreshPath(ppOutputPath, "Unable to refresh preprocessor output path at " + ppOutputPath);
-            ppuFiles = Preprocessor.preprocess(sourceFiles, includePaths, context, ppOutputPath, yesMode, verbose);
+            ppuFiles = Preprocessor.preprocess(sourceFiles, includePaths, ctxPath, ppOutputPath, yesMode, verbose);
             System.out.println("Preprocessing successfully finished.");
         } else {
             System.out.println("Preprocessing aborted");
@@ -209,19 +208,6 @@ public class Main {
         }
 
         System.exit(0);
-    }
-
-    private static PreprocessingContext findPPCtx(Path ctxPath, boolean verbose) throws CompilerException {
-        PreprocessingContext ctx = new PreprocessingContext();
-        if (Files.exists(ctxPath)) {
-            if (verbose) {
-                System.out.println("Context file found. Loading constants via preprocessor...");
-            }
-            Preprocessor.loadContext(ctxPath, ctx, verbose);
-        } else if (verbose) {
-            System.out.println("Context file not found or not supplied. Using blank context.");
-        }
-        return ctx;
     }
 
     private static void showHelp() {

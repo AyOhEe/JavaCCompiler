@@ -4,7 +4,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class PreprocessingContext {
+    private final int MAX_FILE_DEPTH = 32;
+
+
     private HashMap<String, PreprocessorDefinition> macros = new HashMap<>();
+    private int fileDepth = 0;
 
     public PreprocessingContext() { }
 
@@ -32,5 +36,17 @@ public class PreprocessingContext {
     public String evaluateConstexprs(String expression) {
         //TODO this
         return expression;
+    }
+
+    public void fileDeeper() throws CompilerException {
+        fileDepth += 1;
+        if (fileDepth > MAX_FILE_DEPTH) {
+            throw new CompilerException("Maximum #include depth reached");
+        }
+        System.out.println("Depth = " + fileDepth);
+    }
+    public void fileOut() {
+        fileDepth -= 1;
+        System.out.println("Depth = " + fileDepth);
     }
 }

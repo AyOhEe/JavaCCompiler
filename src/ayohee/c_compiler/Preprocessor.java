@@ -10,9 +10,10 @@ import java.util.List;
 
 
 public class Preprocessor {
-    public static ArrayList<Path> preprocess(ArrayList<Path> sourceFiles, ArrayList<Path> includePaths, PreprocessingContext context, Path ppOutputPath, boolean yesMode, boolean verbose) throws CompilerException {
+    public static ArrayList<Path> preprocess(ArrayList<Path> sourceFiles, ArrayList<Path> includePaths, Path ctxPath, Path ppOutputPath, boolean yesMode, boolean verbose) throws CompilerException {
         ArrayList<Path> compilationUnits = new ArrayList<>();
         for (Path sf : sourceFiles) {
+            PreprocessingContext context = findPPCtx(ctxPath, verbose); //refresh context between translation units
             Path result = preprocessFile(sf, includePaths, context, ppOutputPath, verbose);
             compilationUnits.add(result);
         }
@@ -20,8 +21,20 @@ public class Preprocessor {
         return compilationUnits;
     }
 
+    private static PreprocessingContext findPPCtx(Path ctxPath, boolean verbose) throws CompilerException {
+        PreprocessingContext ctx = new PreprocessingContext();
+        if (Files.exists(ctxPath)) {
+            if (verbose) {
+                System.out.println("Context file found. Loading constants via preprocessor...");
+            }
+            loadContext(ctxPath, ctx, verbose);
+        } else if (verbose) {
+            System.out.println("Context file not found or not supplied. Using blank context.");
+        }
+        return ctx;
+    }
 
-    public static void loadContext(Path sf, PreprocessingContext context, boolean verbose) throws CompilerException {
+    private static void loadContext(Path sf, PreprocessingContext context, boolean verbose) throws CompilerException {
         List<String> lines = null;
         try {
             lines = Files.readAllLines(sf);
@@ -37,6 +50,7 @@ public class Preprocessor {
 
         preprocessLines(lines, new ArrayList<>(), context, verbose);
     }
+
 
     private static Path preprocessFile(Path sf, ArrayList<Path> includePaths, PreprocessingContext context, Path ppOutputPath, boolean verbose) throws CompilerException {
         List<String> lines = null;
@@ -75,10 +89,11 @@ public class Preprocessor {
         return filename.substring(0, filename.length() - 2) + ".i";
     }
 
-    private static List<String> preprocessLines(List<String> lines, ArrayList<Path> includePaths, PreprocessingContext context, boolean verbose) throws CompilerException {
+    private static List<String> preprocessLines(List<String> lines, List<Path> includePaths, PreprocessingContext context, boolean verbose) throws CompilerException {
         if(lines.isEmpty()){
             return lines;
         }
+        context.fileDeeper();
 
         List<String> modifiedLines = new ArrayList<>(lines);
 
@@ -97,6 +112,7 @@ public class Preprocessor {
         //phase 5 and 6 technically count as preprocessor responsibilities,
         //but practically belong to the compiler and should be handled after tokenisation
 
+        context.fileOut();
         return modifiedLines;
     }
 
@@ -224,10 +240,67 @@ public class Preprocessor {
         throw new CompilerException("Unmatched #endif directive");
     }
 
-    private static int includeDirective(String trimmed, int i, List<String> lines, List<Path> includePaths, PreprocessingContext context, boolean verbose) {
-        //TODO this
+    private static int includeDirective(String trimmed, int i, List<String> lines, List<Path> includePaths, PreprocessingContext context, boolean verbose) throws CompilerException {
+        int j = 8; //skip "#include"
+        for(; j < trimmed.length(); ++j) {
+            if (!Character.isWhitespace(trimmed.charAt(j))) {
+                break;
+            }
+        }
+
+        List<String> includedLines;
+        if (trimmed.charAt(j) == '<') {
+            //angle include: check built-ins, then supplied,
+            String path = extractIncludePath(trimmed, j, '>');
+            includedLines = findAngleInclude(path, j, includePaths, verbose);
+        } else if (trimmed.charAt(j) == '"') {
+            //quote include: check local first, then supplied, then try for built-ins
+            String path = extractIncludePath(trimmed, j, '"');
+            includedLines = findQuoteInclude(path, j, includePaths, verbose);
+        } else {
+            throw new CompilerException("Incorrectly formed #include: " + trimmed);
+        }
+
+        //preprocess the new file before inclusion
+        includedLines = preprocessLines(includedLines, includePaths, context, verbose);
+
+        //TODO line directives
+        //remove the include
+        lines.set(i, "\n");
+        //insert the lines
+        for (int k = includedLines.size() - 1; k >= 0; --k) {
+            lines.add(i + 1, includedLines.get(k));
+        }
+
         return i + 1;
     }
+
+    private static List<String> findAngleInclude(String path, int j, List<Path> includePaths, boolean verbose) throws CompilerException {
+        System.out.println("Looking for " + path);
+        return new ArrayList<>();
+    }
+
+    private static List<String> findQuoteInclude(String path, int j, List<Path> includePaths, boolean verbose) {
+        System.out.println("Looking for " + path);
+        return new ArrayList<>();
+    }
+
+    private static String extractIncludePath(String trimmed, int j, char delimiter) throws CompilerException {
+        int backslashCount = 0;
+        for (int k = j + 1; k < trimmed.length(); ++k) {
+            if (trimmed.charAt(k) == '\\') {
+                backslashCount += 1;
+            } else {
+                backslashCount = 0;
+            }
+
+            if (trimmed.charAt(k) == delimiter && backslashCount % 2 == 0) {
+                return trimmed.substring(j + 1, k);
+            }
+        }
+        throw new CompilerException("#include did not close: " + trimmed);
+    }
+
 
     private static int defineDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
         String identifier = PreprocessorDefinition.findIdentifier(trimmed, 7);

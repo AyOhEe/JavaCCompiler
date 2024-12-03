@@ -97,6 +97,8 @@ int main() {
     return FLAG_ONLY_DEFINED;
 }
 
+#define A_THING
+
 //continued lines \
 at the end again \
 but still well-formed
