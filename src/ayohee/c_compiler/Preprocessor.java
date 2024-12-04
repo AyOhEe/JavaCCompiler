@@ -13,7 +13,8 @@ public class Preprocessor {
     public static ArrayList<Path> preprocess(ArrayList<Path> sourceFiles, ArrayList<Path> includePaths, Path ctxPath, Path ppOutputPath, boolean yesMode, boolean verbose) throws CompilerException {
         ArrayList<Path> compilationUnits = new ArrayList<>();
         for (Path sf : sourceFiles) {
-            PreprocessingContext context = findPPCtx(ctxPath, verbose); //refresh context between translation units
+            System.out.println("\nPreprocessing " + sf.toString());
+            PreprocessingContext context = findPPCtx(ctxPath, sf, verbose); //refresh context between translation units
             Path result = preprocessFile(sf, includePaths, context, ppOutputPath, verbose);
             compilationUnits.add(result);
         }
@@ -21,8 +22,8 @@ public class Preprocessor {
         return compilationUnits;
     }
 
-    private static PreprocessingContext findPPCtx(Path ctxPath, boolean verbose) throws CompilerException {
-        PreprocessingContext ctx = new PreprocessingContext();
+    private static PreprocessingContext findPPCtx(Path ctxPath, Path sourcePath, boolean verbose) throws CompilerException {
+        PreprocessingContext ctx = new PreprocessingContext(sourcePath);
         if (Files.exists(ctxPath)) {
             if (verbose) {
                 System.out.println("Context file found. Loading constants via preprocessor...");
@@ -35,37 +36,13 @@ public class Preprocessor {
     }
 
     private static void loadContext(Path sf, PreprocessingContext context, boolean verbose) throws CompilerException {
-        List<String> lines = null;
-        try {
-            lines = Files.readAllLines(sf);
-            for(int i = 1; i < lines.size(); ++i) {
-                lines.set(i - 1, lines.get(i - 1) + "\n");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("Failed to open " + sf);
-            System.exit(2);
-        }
-
-
+        List<String> lines = openAsLines(sf);
         preprocessLines(lines, new ArrayList<>(), context, verbose);
     }
 
 
     private static Path preprocessFile(Path sf, ArrayList<Path> includePaths, PreprocessingContext context, Path ppOutputPath, boolean verbose) throws CompilerException {
-        List<String> lines = null;
-        try {
-            lines = Files.readAllLines(sf);
-            for(int i = 1; i < lines.size(); ++i) {
-                lines.set(i - 1, lines.get(i - 1) + "\n");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.out.println("Failed to open " + sf);
-            System.exit(2);
-        }
-
-
+        List<String> lines = openAsLines(sf);
         List<String> processedLines = preprocessLines(lines, includePaths, context, verbose);
 
 
@@ -81,6 +58,21 @@ public class Preprocessor {
         }
 
         return compilationUnitPath;
+    }
+
+    private static List<String> openAsLines(Path sf) {
+        List<String> lines = null;
+        try {
+            lines = Files.readAllLines(sf);
+            for(int i = 1; i < lines.size(); ++i) {
+                lines.set(i - 1, lines.get(i - 1) + "\n");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Failed to open " + sf);
+            System.exit(2);
+        }
+        return lines;
     }
 
     private static String getUnitFilename(Path sf) {
@@ -250,13 +242,13 @@ public class Preprocessor {
 
         List<String> includedLines;
         if (trimmed.charAt(j) == '<') {
-            //angle include: check built-ins, then supplied,
+            //angle include: check built-ins, then supplied
             String path = extractIncludePath(trimmed, j, '>');
-            includedLines = findAngleInclude(path, j, includePaths, verbose);
+            includedLines = findAngleInclude(path, j, includePaths, context, verbose);
         } else if (trimmed.charAt(j) == '"') {
             //quote include: check local first, then supplied, then try for built-ins
             String path = extractIncludePath(trimmed, j, '"');
-            includedLines = findQuoteInclude(path, j, includePaths, verbose);
+            includedLines = findQuoteInclude(path, j, includePaths, context, verbose);
         } else {
             throw new CompilerException("Incorrectly formed #include: " + trimmed);
         }
@@ -275,14 +267,36 @@ public class Preprocessor {
         return i + 1;
     }
 
-    private static List<String> findAngleInclude(String path, int j, List<Path> includePaths, boolean verbose) throws CompilerException {
-        System.out.println("Looking for " + path);
-        return new ArrayList<>();
+    private static List<String> findAngleInclude(String path, int j, List<Path> includePaths, PreprocessingContext context, boolean verbose) throws CompilerException {
+        Path asPath = Path.of(path);
+
+        //TODO check builtin headers
+        for (Path includePath : includePaths) {
+            Path fullPath = asPath.isAbsolute() ? asPath : includePath.resolve(asPath);
+            System.out.println(fullPath);
+            if (Files.exists(fullPath)) {
+                return openAsLines(fullPath);
+            }
+        }
+        throw new CompilerException("Failed to locate included file: " + path);
     }
 
-    private static List<String> findQuoteInclude(String path, int j, List<Path> includePaths, boolean verbose) {
-        System.out.println("Looking for " + path);
-        return new ArrayList<>();
+    private static List<String> findQuoteInclude(String path, int j, List<Path> includePaths, PreprocessingContext context, boolean verbose) throws CompilerException {
+        Path asPath = Path.of(path);
+
+        Path localPath = asPath.isAbsolute() ? asPath : context.getSourcePath().getParent().resolve(asPath);
+        if (Files.exists(localPath)) {
+            return openAsLines(localPath);
+        }
+
+        for (Path includePath : includePaths) {
+            Path fullPath = asPath.isAbsolute() ? asPath : includePath.resolve(asPath);
+            if (Files.exists(fullPath)) {
+                return openAsLines(fullPath);
+            }
+        }
+        //TODO check builtin headers
+        throw new CompilerException("Failed to locate included file: " + path);
     }
 
     private static String extractIncludePath(String trimmed, int j, char delimiter) throws CompilerException {

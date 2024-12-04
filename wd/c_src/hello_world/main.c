@@ -1,5 +1,5 @@
 #include "header.h"
-#include <other header.h>
+#include <other_header.h>
 
 A_THING
 

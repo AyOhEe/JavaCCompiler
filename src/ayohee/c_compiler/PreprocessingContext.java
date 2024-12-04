@@ -1,5 +1,6 @@
 package ayohee.c_compiler;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,9 +9,12 @@ public class PreprocessingContext {
 
 
     private HashMap<String, PreprocessorDefinition> macros = new HashMap<>();
+    private Path sourcePath = null;
     private int fileDepth = 0;
 
-    public PreprocessingContext() { }
+    public PreprocessingContext(Path sourcePath) {
+        this.sourcePath = sourcePath;
+    }
 
     public boolean isDefined(String identifier) {
         return macros.containsKey(identifier);
@@ -43,10 +47,12 @@ public class PreprocessingContext {
         if (fileDepth > MAX_FILE_DEPTH) {
             throw new CompilerException("Maximum #include depth reached");
         }
-        System.out.println("Depth = " + fileDepth);
     }
     public void fileOut() {
         fileDepth -= 1;
-        System.out.println("Depth = " + fileDepth);
+    }
+
+    public Path getSourcePath() {
+        return sourcePath;
     }
 }

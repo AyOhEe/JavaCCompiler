@@ -151,7 +151,7 @@ public class Main {
         if(cleanup || confirmUserIntent(msg, yesMode)) {
             refreshPath(ppOutputPath, "Unable to refresh preprocessor output path at " + ppOutputPath);
             ppuFiles = Preprocessor.preprocess(sourceFiles, includePaths, ctxPath, ppOutputPath, yesMode, verbose);
-            System.out.println("Preprocessing successfully finished.");
+            System.out.println("\nPreprocessing successfully finished.");
         } else {
             System.out.println("Preprocessing aborted");
             System.exit(1);
