@@ -11,9 +11,13 @@ public class PreprocessingContext {
     private HashMap<String, PreprocessorDefinition> macros = new HashMap<>();
     private Path sourcePath = null;
     private int fileDepth = 0;
+    private boolean yesMode;
+    private boolean verbose;
 
-    public PreprocessingContext(Path sourcePath) {
+    public PreprocessingContext(Path sourcePath, boolean yesMode, boolean verbose) {
         this.sourcePath = sourcePath;
+        this.yesMode = yesMode;
+        this.verbose = verbose;
     }
 
     public boolean isDefined(String identifier) {
@@ -54,5 +58,12 @@ public class PreprocessingContext {
 
     public Path getSourcePath() {
         return sourcePath;
+    }
+
+    public boolean isVerbose() {
+        return verbose;
+    }
+    public boolean isYesMode() {
+        return yesMode;
     }
 }
