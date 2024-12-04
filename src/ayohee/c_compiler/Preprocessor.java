@@ -125,18 +125,18 @@ public class Preprocessor {
 
             //#line directives are ignored - those are for the compiler
             i = switch (directive) {
-                case "#if" -> ifDirective(trimmed, i, lines, context, verbose);
-                case "#ifdef" -> ifdefDirective(trimmed, i, lines, context, verbose);
-                case "#ifndef" -> ifndefDirective(trimmed, i, lines, context, verbose);
-                case "#elif" -> elifDirective(trimmed, i, lines, context, verbose);
-                case "#else" -> elseDirective(trimmed, i, lines, context, verbose);
-                case "#endif" -> endifDirective(trimmed, i, lines, context, verbose);
+                case "#if" -> ifDirective(trimmed, i, lines, context);
+                case "#ifdef" -> ifdefDirective(trimmed, i, lines);
+                case "#ifndef" -> ifndefDirective(trimmed, i, lines);
+                case "#elif" -> elifDirective();
+                case "#else" -> elseDirective();
+                case "#endif" -> endifDirective();
 
                 case "#include" -> includeDirective(trimmed, i, lines, includePaths, context, verbose);
-                case "#define" -> defineDirective(trimmed, i, lines, context, verbose);
-                case "#undef" -> undefineDirective(trimmed, i, lines, context, verbose);
-                case "#error" -> errorDirective(trimmed, i, lines, context, verbose);
-                case "#pragma" -> pragmaDirective(trimmed, i, lines, context, verbose);
+                case "#define" -> defineDirective(trimmed, i, lines, context);
+                case "#undef" -> undefineDirective(trimmed, i, lines, context);
+                case "#error" -> errorDirective(trimmed);
+                case "#pragma" -> pragmaDirective(i, lines);
               //case "": # empty statement - should be ignored
 
                 default -> i + 1;
@@ -144,7 +144,7 @@ public class Preprocessor {
         }
     }
 
-    private static int ifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
+    private static int ifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context) throws CompilerException {
         //find else/elif/endif
         int depth = 0;
         int j = i; //declared outside to keep the value after the loop finishes
@@ -210,25 +210,25 @@ public class Preprocessor {
         }
     }
 
-    private static int ifdefDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+    private static int ifdefDirective(String trimmed, int i, List<String> lines) {
         lines.set(i, "#if defined(" + trimmed.substring(7, trimmed.length() - 1) + ")\n");
         return i;
     }
 
-    private static int ifndefDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+    private static int ifndefDirective(String trimmed, int i, List<String> lines) {
         lines.set(i, "#if !defined(" + trimmed.substring(8, trimmed.length() - 1) + ")\n");
         return i;
     }
 
-    private static int elifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
+    private static int elifDirective() throws CompilerException {
         throw new CompilerException("Unmatched #elif directive");
     }
 
-    private static int elseDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
+    private static int elseDirective() throws CompilerException {
         throw new CompilerException("Unmatched #else directive");
     }
 
-    private static int endifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
+    private static int endifDirective() throws CompilerException {
         throw new CompilerException("Unmatched #endif directive");
     }
 
@@ -316,14 +316,14 @@ public class Preprocessor {
     }
 
 
-    private static int defineDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
+    private static int defineDirective(String trimmed, int i, List<String> lines, PreprocessingContext context) throws CompilerException {
         String identifier = PreprocessorDefinition.findIdentifier(trimmed, 7);
         context.define(identifier, PreprocessorDefinition.extractReplacementList(trimmed));
         lines.set(i, "\n");
         return i + 1;
     }
 
-    private static int undefineDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
+    private static int undefineDirective(String trimmed, int i, List<String> lines, PreprocessingContext context) throws CompilerException {
         String identifier = PreprocessorDefinition.findIdentifier(trimmed, 7);
         context.undefine(identifier);
 
@@ -331,11 +331,11 @@ public class Preprocessor {
         return i + 1;
     }
 
-    private static int errorDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) throws CompilerException {
+    private static int errorDirective(String trimmed) throws CompilerException {
         throw new CompilerException(trimmed);
     }
 
-    private static int pragmaDirective(String trimmed, int i, List<String> lines, PreprocessingContext context, boolean verbose) {
+    private static int pragmaDirective(int i, List<String> lines) {
         //currently, no pragma directives do anything.
         lines.set(i, "\n");
         return i + 1;
