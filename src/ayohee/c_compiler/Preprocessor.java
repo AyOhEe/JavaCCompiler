@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,9 +13,10 @@ import java.util.List;
 public class Preprocessor {
     public static ArrayList<Path> preprocess(ArrayList<Path> sourceFiles, ArrayList<Path> includePaths, Path ctxPath, Path ppOutputPath, boolean yesMode, boolean verbose) throws CompilerException {
         ArrayList<Path> compilationUnits = new ArrayList<>();
+        LocalDateTime compilationTime = LocalDateTime.now();
         for (Path sf : sourceFiles) {
             System.out.println("\nPreprocessing " + sf.toString());
-            PreprocessingContext context = findPPCtx(ctxPath, sf, yesMode, verbose); //refresh context between translation units
+            PreprocessingContext context = findPPCtx(ctxPath, sf, compilationTime, yesMode, verbose); //refresh context between translation units
 
             Path result = preprocessFile(includePaths, context, ppOutputPath);
             compilationUnits.add(result);
@@ -23,8 +25,8 @@ public class Preprocessor {
         return compilationUnits;
     }
 
-    private static PreprocessingContext findPPCtx(Path ctxPath, Path sourcePath, boolean yesMode, boolean verbose) throws CompilerException {
-        PreprocessingContext ctx = new PreprocessingContext(sourcePath, yesMode, verbose);
+    private static PreprocessingContext findPPCtx(Path ctxPath, Path sourcePath, LocalDateTime compilationTime, boolean yesMode, boolean verbose) throws CompilerException {
+        PreprocessingContext ctx = new PreprocessingContext(sourcePath, compilationTime, yesMode, verbose);
         if (Files.exists(ctxPath)) {
             if (verbose) {
                 System.out.println("Context file found. Loading constants via preprocessor...");
