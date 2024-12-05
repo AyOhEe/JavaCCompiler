@@ -5,24 +5,26 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Stack;
 
 public class PreprocessingContext {
     private final int MAX_FILE_DEPTH = 32;
 
 
     private HashMap<String, PreprocessorDefinition> macros = new HashMap<>();
-    private Path sourcePath = null;
-    private int fileDepth = 0;
+    private Stack<Path> fileStack;
+    private Path originalSourcePath;
     private boolean yesMode;
     private boolean verbose;
 
-    public PreprocessingContext(Path sourcePath, LocalDateTime compilationStart, boolean yesMode, boolean verbose) {
-        this.sourcePath = sourcePath;
+    public PreprocessingContext(Path originalSourcePath, LocalDateTime compilationStart, boolean yesMode, boolean verbose) throws CompilerException {
+        this.fileStack = new Stack<>();
+        this.originalSourcePath = originalSourcePath;
         this.yesMode = yesMode;
         this.verbose = verbose;
 
         //don't do this through define or it'll throw for re-defining predefined macros
-        macros.put("__FILE__", PreprocessorDefinition.parse(escapePath(sourcePath)));
+        //__FILE__ and __LINE__ are handled as special cases, as they are file dependant
         macros.put("__TIME__", PreprocessorDefinition.parse(formatTime(compilationStart)));
         macros.put("__DATE__", PreprocessorDefinition.parse(formatDate(compilationStart)));
         macros.put("__STDC__", PreprocessorDefinition.parse("1"));
@@ -85,18 +87,25 @@ public class PreprocessingContext {
         return expression;
     }
 
-    public void fileDeeper() throws CompilerException {
-        fileDepth += 1;
-        if (fileDepth > MAX_FILE_DEPTH) {
+    public void fileDeeper(Path nextFile) throws CompilerException {
+        fileStack.push(nextFile);
+        macros.put("__FILE__", PreprocessorDefinition.parse(escapePath(fileStack.peek())));
+
+        if (fileStack.size() > MAX_FILE_DEPTH) {
             throw new CompilerException("Maximum #include depth reached");
         }
     }
     public void fileOut() {
-        fileDepth -= 1;
+        fileStack.pop();
+        macros.put("__FILE__", PreprocessorDefinition.parse(fileStack.empty() ? "\"UNKNOWN\"" : escapePath(fileStack.peek())));
     }
 
-    public Path getSourcePath() {
-        return sourcePath;
+    public Path getOriginalSourcePath() {
+        return originalSourcePath;
+    }
+
+    public Path getCurrentSourcePath() {
+        return fileStack.peek();
     }
 
     public boolean isVerbose() {
