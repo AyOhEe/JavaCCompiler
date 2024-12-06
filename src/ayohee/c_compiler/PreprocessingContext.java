@@ -9,6 +9,7 @@ import java.util.Stack;
 
 public class PreprocessingContext {
     private final int MAX_FILE_DEPTH = 32;
+    private final int REPLACEMENT_LIMIT = 16;
 
 
     private HashMap<String, PreprocessorDefinition> macros = new HashMap<>();
@@ -76,9 +77,14 @@ public class PreprocessingContext {
         macros.remove(identifier);
     }
 
-    public String doReplacement(String line) {
+    public String doReplacement(String line) throws CompilerException {
         boolean wasUpdated = true;
+        int depth = 0;
         while (wasUpdated) {
+            depth++;
+            if (depth > REPLACEMENT_LIMIT) {
+                throw new CompilerException("Maximum replacement depth reached");
+            }
             String initialLine = line;
 
             for(Map.Entry<String, PreprocessorDefinition> entry : macros.entrySet()) {
