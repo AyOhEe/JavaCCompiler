@@ -1,18 +1,44 @@
 package ayohee.c_compiler;
 
-public class PreprocessorDefinition {
-    public static PreprocessorDefinition parse(String value) {
-        return new PreprocessorDefinition(value);
+public abstract class PreprocessorDefinition {
+    public static PreprocessorDefinition parse(String line, int startAt) throws CompilerException {
+        int identifierBegins = -1;
+        for (int i = startAt; i < line.length(); ++i) {
+            if (!Character.isWhitespace(line.charAt(i))) {
+                identifierBegins = i;
+                break;
+            }
+        }
+        if (identifierBegins == -1) {
+            throw new CompilerException("No identifier in line after startAt");
+        }
+
+        int identifierEnds = -1;
+        for(int i = identifierBegins; i < line.length(); ++i) {
+            if (Character.isWhitespace(line.charAt(i)) || line.charAt(i) == '(') {
+                identifierEnds = i - 1;
+                break;
+            }
+        }
+        if (identifierEnds == -1) {
+            throw new CompilerException("This shouldn't happen. PreprocessorDefinition.java::parse");
+        }
+
+        if (line.charAt(identifierEnds + 1) == '(') {
+            return new FunctionLikePreprocessorDefinition(line, identifierEnds + 1);
+        } else {
+            //from the first whitespace after the identifier, trimming the newline
+            return new ObjectLikePreprocessorDefinition(line, identifierEnds + 1);
+        }
     }
 
     public static String findIdentifier(String line, int startAt) throws CompilerException {
         int identifierBegins = -1;
         for (int i = startAt; i < line.length(); ++i) {
-            if (Character.isWhitespace(line.charAt(i))) {
-                continue;
+            if (!Character.isWhitespace(line.charAt(i))) {
+                identifierBegins = i;
+                break;
             }
-            identifierBegins = i;
-            break;
         }
 
         if (identifierBegins == -1) {
@@ -28,21 +54,5 @@ public class PreprocessorDefinition {
         throw new CompilerException("This shouldn't happen. PreprocessorDefinition.java::findIdentifier");
     }
 
-    public static String extractReplacementList(String trimmed) {
-        //TODO constexpr evaluations
-        //TODO this
-        return "DOES NOT WORK";
-    }
-
-    String replacementList;
-
-    public PreprocessorDefinition(String replacement) {
-        replacementList = replacement.isBlank() ? "1" : replacement;
-    }
-
-
-    public String replaceInstances(String label, String line, boolean verbose) {
-        //TODO does not work for function-like macros
-        return line.replaceAll("\\b" + label + "\\b", replacementList);
-    }
+    public abstract String replaceInstances(String label, String line, boolean verbose);
 }

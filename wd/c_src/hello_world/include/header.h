@@ -1,6 +1,6 @@
 #include "nested/nested.h"
 
-#define ABC 42
+#define ABC 123
 
 void foo() {
     return;

@@ -25,9 +25,9 @@ public class PreprocessingContext {
 
         //don't do this through define or it'll throw for re-defining predefined macros
         //__FILE__ and __LINE__ are handled as special cases, as they are file dependant
-        macros.put("__TIME__", PreprocessorDefinition.parse(formatTime(compilationStart)));
-        macros.put("__DATE__", PreprocessorDefinition.parse(formatDate(compilationStart)));
-        macros.put("__STDC__", PreprocessorDefinition.parse("1"));
+        macros.put("__TIME__", PreprocessorDefinition.parse("__TIME__ " + formatTime(compilationStart) + "\n", 0));
+        macros.put("__DATE__", PreprocessorDefinition.parse("__DATE__ " + formatDate(compilationStart) + "\n", 0));
+        macros.put("__STDC__", PreprocessorDefinition.parse("__STDC__ 1" + "\n", 0));
     }
 
     private static String formatDate(LocalDateTime compilationStart) {
@@ -63,22 +63,37 @@ public class PreprocessingContext {
         return macros.containsKey(identifier);
     }
 
-    public void define(String identifier, String value) throws CompilerException {
+    public void define(String statement) throws CompilerException {
+        String identifier = PreprocessorDefinition.findIdentifier(statement, 7);
         switch (identifier) {
             case "__LINE__", "__FILE__", "__DATE__", "__TIME__", "__STDC__" -> throw new CompilerException("Attempted to define predefined macro: " + identifier);
         }
-        macros.put(identifier, PreprocessorDefinition.parse(value));
+
+        macros.put(identifier, PreprocessorDefinition.parse(statement, 7));
     }
 
     public void undefine(String identifier) {
         macros.remove(identifier);
     }
 
-    public String doReplacement(String line, boolean verbose) {
-        for(Map.Entry<String, PreprocessorDefinition> entry : macros.entrySet()) {
-            line = entry.getValue().replaceInstances(entry.getKey(), line, verbose);
+    public String doReplacement(String line) {
+        boolean wasUpdated = true;
+        while (wasUpdated) {
+            String initialLine = line;
+
+            for(Map.Entry<String, PreprocessorDefinition> entry : macros.entrySet()) {
+                line = entry.getValue().replaceInstances(entry.getKey(), line, verbose);
+            }
+            line = handleDoublehashConcatenation(line);
+
+            wasUpdated = !initialLine.contentEquals(line);
         }
         line = evaluateConstexprs(line);
+        return line;
+    }
+
+    private String handleDoublehashConcatenation(String line) {
+        //TODO this
         return line;
     }
 
@@ -89,15 +104,16 @@ public class PreprocessingContext {
 
     public void fileDeeper(Path nextFile) throws CompilerException {
         fileStack.push(nextFile);
-        macros.put("__FILE__", PreprocessorDefinition.parse(escapePath(fileStack.peek())));
+        macros.put("__FILE__", PreprocessorDefinition.parse("__FILE__ " + escapePath(fileStack.peek()) + "\n", 0));
 
         if (fileStack.size() > MAX_FILE_DEPTH) {
             throw new CompilerException("Maximum #include depth reached");
         }
     }
-    public void fileOut() {
+    public void fileOut() throws CompilerException {
         fileStack.pop();
-        macros.put("__FILE__", PreprocessorDefinition.parse(fileStack.empty() ? "\"UNKNOWN\"" : escapePath(fileStack.peek())));
+        String macro = fileStack.empty() ? "\"UNKNOWN\"\n" : escapePath(fileStack.peek()) + "\n";
+        macros.put("__FILE__", PreprocessorDefinition.parse("__FILE__ " + macro, 0));
     }
 
     public Path getOriginalSourcePath() {

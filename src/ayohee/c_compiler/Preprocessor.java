@@ -121,7 +121,7 @@ public class Preprocessor {
 
             String directive = extractDirective(trimmed);
             if(!directive.startsWith("#")) {
-                lines.set(i, context.doReplacement(lines.get(i), context.isVerbose()));
+                lines.set(i, context.doReplacement(lines.get(i)));
                 ++i;
                 continue;
             }
@@ -138,7 +138,7 @@ public class Preprocessor {
                 case "#include" -> includeDirective(trimmed, i, lines, includePaths, context);
                 case "#define" -> defineDirective(trimmed, i, lines, context);
                 case "#undef" -> undefineDirective(trimmed, i, lines, context);
-                case "#error" -> errorDirective(trimmed);
+                case "#error" -> errorDirective(trimmed, context);
                 case "#pragma" -> pragmaDirective(i, lines);
               //case "": # empty statement - should be ignored
 
@@ -181,7 +181,9 @@ public class Preprocessor {
         }
 
 
-        String evaluatedLine = context.evaluateConstexprs(trimmed).toLowerCase().replaceAll("[^\\S\\n]+", " ");
+        //regex matches one or more continuous whitespace characters (except newlines) via a double negative
+        //TL;DR, it replaces each group of whitespace with a single space
+        String evaluatedLine = context.doReplacement(trimmed).replaceAll("[^\\S\\n]+", " ");
         if (evaluatedLine.startsWith("#if 1")) {
             //keep the clause, get rid of the rest of the block
             lines.set(i, "\n");
@@ -321,8 +323,7 @@ public class Preprocessor {
 
 
     private static int defineDirective(String trimmed, int i, List<String> lines, PreprocessingContext context) throws CompilerException {
-        String identifier = PreprocessorDefinition.findIdentifier(trimmed, 7);
-        context.define(identifier, PreprocessorDefinition.extractReplacementList(trimmed));
+        context.define(trimmed);
         lines.set(i, "\n");
         return i + 1;
     }
@@ -335,8 +336,8 @@ public class Preprocessor {
         return i + 1;
     }
 
-    private static int errorDirective(String trimmed) throws CompilerException {
-        throw new CompilerException(trimmed);
+    private static int errorDirective(String trimmed, PreprocessingContext context) throws CompilerException {
+        throw new CompilerException(context.doReplacement(trimmed));
     }
 
     private static int pragmaDirective(int i, List<String> lines) {
