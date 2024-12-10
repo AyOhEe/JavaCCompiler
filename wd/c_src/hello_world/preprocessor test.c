@@ -83,7 +83,9 @@ Should not appear if the above does
 #endif
 
 
-#define FUNCTION_LIKE(foo) (foo + foo)
+#define FUNCTION_LIKE1(foo, asjahflahfawff) (foo + foo)
+#define FUNCTION_LIKE2(      foo,           asjahflahfawff            ) (foo + foo)
+#define FUNCTION_LIKE3(foo,asjahflahfawff) (foo + foo)
 #define TEST_DEFINITION
 
 TEST_DEFINITION
