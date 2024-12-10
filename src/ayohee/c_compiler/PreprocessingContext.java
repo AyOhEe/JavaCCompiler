@@ -66,11 +66,11 @@ public class PreprocessingContext {
 
     public void define(String statement) throws CompilerException {
         String identifier = PreprocessorDefinition.findIdentifier(statement, 7);
-        switch (identifier) {
-            case "__LINE__", "__FILE__", "__DATE__", "__TIME__", "__STDC__" -> throw new CompilerException("Attempted to define predefined macro: " + identifier);
+        if (Preprocessor.isValidIdentifier(identifier)) {
+            macros.put(identifier, PreprocessorDefinition.parse(statement, 7));
+        } else {
+            throw new CompilerException("Attempted to define invalid identifier \"" + identifier + "\"" + " on line: " + statement);
         }
-
-        macros.put(identifier, PreprocessorDefinition.parse(statement, 7));
     }
 
     public void undefine(String identifier) {

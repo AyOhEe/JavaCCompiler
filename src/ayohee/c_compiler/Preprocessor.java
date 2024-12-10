@@ -330,7 +330,11 @@ public class Preprocessor {
 
     private static int undefineDirective(String trimmed, int i, List<String> lines, PreprocessingContext context) throws CompilerException {
         String identifier = PreprocessorDefinition.findIdentifier(trimmed, 7);
-        context.undefine(identifier);
+        if (isValidIdentifier(identifier)) {
+            context.undefine(identifier);
+        } else {
+            throw new CompilerException("Attempted to undefine invalid identifier \"" + identifier + "\"" + " on line: " + trimmed);
+        }
 
         lines.set(i, "\n");
         return i + 1;
@@ -483,5 +487,24 @@ public class Preprocessor {
                 .replace("??!", "|")
                 .replace("??>", "}")
                 .replace("??-", "~"));
+    }
+
+    public static boolean isValidIdentifier(String identifier) throws CompilerException {
+        switch (identifier) {
+            case "__LINE__", "__FILE__", "__DATE__", "__TIME__", "__STDC__" -> throw new CompilerException("Attempted to redefine or undefine predefined macro: " + identifier);
+            case "" -> throw new CompilerException("Empty identifier");
+        }
+
+        if (!(Character.isAlphabetic(identifier.charAt(0)) || identifier.charAt(0) == '_')) {
+            return false;
+        }
+
+        for (int i = 1; i < identifier.length(); ++i) {
+            if (!(Character.isLetterOrDigit(identifier.charAt(i)) || identifier.charAt(i) == '_')) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
