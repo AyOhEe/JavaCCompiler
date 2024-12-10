@@ -56,5 +56,5 @@ public abstract class PreprocessorDefinition {
         throw new CompilerException("This shouldn't happen. PreprocessorDefinition.java::findIdentifier");
     }
 
-    public abstract void replaceInstances(String label, List<String> lines, int i, boolean verbose);
+    public abstract void replaceInstances(String label, List<String> lines, int i, boolean verbose) throws CompilerException;
 }

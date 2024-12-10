@@ -93,7 +93,6 @@ public class PreprocessingContext {
 
             wasUpdated = !initialLine.contentEquals(lines.get(i));
         }
-        evaluateConstexprs(lines, i);
     }
     public String doReplacement(String line) throws CompilerException {
         List<String> lines = new ArrayList<>();
@@ -109,8 +108,10 @@ public class PreprocessingContext {
         return line;
     }
 
-    public void evaluateConstexprs(List<String> lines, int i) {
+    public String evaluateConstexprs(String line) {
         //TODO this
+        //     thankfully, this only needs to handle one line constexprs for preprocessing conditional blocks.
+        return line;
     }
 
     public void fileDeeper(Path nextFile) throws CompilerException {

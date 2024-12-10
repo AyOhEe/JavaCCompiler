@@ -183,7 +183,7 @@ public class Preprocessor {
 
         //regex matches one or more continuous whitespace characters (except newlines) via a double negative
         //TL;DR, it replaces each group of whitespace with a single space
-        String evaluatedLine = context.doReplacement(trimmed).replaceAll("[^\\S\\n]+", " ");
+        String evaluatedLine = context.evaluateConstexprs(context.doReplacement(trimmed).replaceAll("[^\\S\\n]+", " "));
         if (evaluatedLine.startsWith("#if 1")) {
             //keep the clause, get rid of the rest of the block
             lines.set(i, "\n");

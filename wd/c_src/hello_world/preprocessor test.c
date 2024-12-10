@@ -96,7 +96,10 @@ TEST_DEFINITION
 
 
 int main() {
-    return FLAG_ONLY_DEFINED;
+    //FUNCTION_LIKE1(2);
+    FUNCTION_LIKE1(2, 0);
+    //FUNCTION_LIKE1(2,  0,  3);
+    return FUNCTION_LIKE1(     2   ,    0     );
 }
 
 #define A_THING
