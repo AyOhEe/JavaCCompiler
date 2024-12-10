@@ -1,6 +1,7 @@
 package ayohee.c_compiler;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class FunctionLikePreprocessorDefinition extends PreprocessorDefinition {
     ArrayList<String> argumentNames;
@@ -55,9 +56,8 @@ public class FunctionLikePreprocessorDefinition extends PreprocessorDefinition {
     }
 
     @Override
-    public String replaceInstances(String label, String line, boolean verbose) {
+    public void replaceInstances(String label, List<String> lines, int i, boolean verbose) {
         //TODO this
-        return line;
     }
 
     @Override

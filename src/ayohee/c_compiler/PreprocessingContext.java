@@ -1,11 +1,10 @@
 package ayohee.c_compiler;
 
 import java.nio.file.Path;
+import java.sql.Array;
 import java.time.LocalDateTime;
 import java.time.Month;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 public class PreprocessingContext {
     private final int MAX_FILE_DEPTH = 32;
@@ -77,7 +76,7 @@ public class PreprocessingContext {
         macros.remove(identifier);
     }
 
-    public String doReplacement(String line) throws CompilerException {
+    public void doReplacement(List<String> lines, int i) throws CompilerException {
         boolean wasUpdated = true;
         int depth = 0;
         while (wasUpdated) {
@@ -85,17 +84,24 @@ public class PreprocessingContext {
             if (depth > REPLACEMENT_LIMIT) {
                 throw new CompilerException("Maximum replacement depth reached");
             }
-            String initialLine = line;
+            String initialLine = lines.get(i);
 
             for(Map.Entry<String, PreprocessorDefinition> entry : macros.entrySet()) {
-                line = entry.getValue().replaceInstances(entry.getKey(), line, verbose);
+                entry.getValue().replaceInstances(entry.getKey(), lines, i, verbose);
             }
-            line = handleDoublehashConcatenation(line);
+            lines.set(i, handleDoublehashConcatenation(lines.get(i)));
 
-            wasUpdated = !initialLine.contentEquals(line);
+            wasUpdated = !initialLine.contentEquals(lines.get(i));
         }
-        line = evaluateConstexprs(line);
-        return line;
+        evaluateConstexprs(lines, i);
+    }
+    public String doReplacement(String line) throws CompilerException {
+        List<String> lines = new ArrayList<>();
+        lines.add(line);
+
+        doReplacement(lines, 0);
+
+        return lines.getFirst();
     }
 
     private String handleDoublehashConcatenation(String line) {
@@ -103,9 +109,8 @@ public class PreprocessingContext {
         return line;
     }
 
-    public String evaluateConstexprs(String expression) {
+    public void evaluateConstexprs(List<String> lines, int i) {
         //TODO this
-        return expression;
     }
 
     public void fileDeeper(Path nextFile) throws CompilerException {

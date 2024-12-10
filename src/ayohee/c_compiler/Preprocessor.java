@@ -121,7 +121,7 @@ public class Preprocessor {
 
             String directive = extractDirective(trimmed);
             if(!directive.startsWith("#")) {
-                lines.set(i, context.doReplacement(lines.get(i)));
+                context.doReplacement(lines, i);
                 ++i;
                 continue;
             }

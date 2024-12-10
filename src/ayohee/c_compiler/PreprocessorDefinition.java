@@ -1,5 +1,7 @@
 package ayohee.c_compiler;
 
+import java.util.List;
+
 public abstract class PreprocessorDefinition {
     public static PreprocessorDefinition parse(String line, int startAt) throws CompilerException {
         int identifierBegins = -1;
@@ -54,5 +56,5 @@ public abstract class PreprocessorDefinition {
         throw new CompilerException("This shouldn't happen. PreprocessorDefinition.java::findIdentifier");
     }
 
-    public abstract String replaceInstances(String label, String line, boolean verbose);
+    public abstract void replaceInstances(String label, List<String> lines, int i, boolean verbose);
 }

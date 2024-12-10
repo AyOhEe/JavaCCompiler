@@ -1,5 +1,7 @@
 package ayohee.c_compiler;
 
+import java.util.List;
+
 public class ObjectLikePreprocessorDefinition extends PreprocessorDefinition {
     private String replacementList;
 
@@ -15,8 +17,8 @@ public class ObjectLikePreprocessorDefinition extends PreprocessorDefinition {
     }
 
     @Override
-    public String replaceInstances(String label, String line, boolean verbose) {
-        return line.replaceAll("\\b" + label + "\\b", replacementList);
+    public void replaceInstances(String label, List<String> lines, int i, boolean verbose) {
+        lines.set(i, lines.get(i).replaceAll("\\b" + label + "\\b", replacementList));
     }
 
     @Override
