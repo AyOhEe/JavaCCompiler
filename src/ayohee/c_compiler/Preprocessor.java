@@ -11,6 +11,7 @@ import java.util.List;
 
 
 public class Preprocessor {
+    //TODO update
     public static ArrayList<Path> preprocess(ArrayList<Path> sourceFiles, ArrayList<Path> includePaths, Path ctxPath, Path ppOutputPath, boolean yesMode, boolean verbose) throws CompilerException {
         ArrayList<Path> compilationUnits = new ArrayList<>();
         LocalDateTime compilationTime = LocalDateTime.now();
@@ -25,6 +26,7 @@ public class Preprocessor {
         return compilationUnits;
     }
 
+    //TODO update
     private static PreprocessingContext findPPCtx(Path ctxPath, Path sf, LocalDateTime compilationTime, boolean yesMode, boolean verbose) throws CompilerException {
         PreprocessingContext ctx = new PreprocessingContext(sf, compilationTime, yesMode, verbose);
         if (Files.exists(ctxPath)) {
@@ -38,12 +40,14 @@ public class Preprocessor {
         return ctx;
     }
 
+    //TODO update
     private static void loadContext(Path sf, PreprocessingContext context) throws CompilerException {
         List<String> lines = openAsLines(sf);
         preprocessLines(sf, lines, new ArrayList<>(), context);
     }
 
 
+    //TODO update
     private static Path preprocessFile(Path sf, ArrayList<Path> includePaths, PreprocessingContext context, Path ppOutputPath) throws CompilerException {
         List<String> lines = openAsLines(sf);
         List<String> processedLines = preprocessLines(sf, lines, includePaths, context);
@@ -84,6 +88,7 @@ public class Preprocessor {
         return filename.substring(0, filename.length() - 2) + ".i";
     }
 
+    //TODO update
     private static List<String> preprocessLines(Path filePath, List<String> lines, List<Path> includePaths, PreprocessingContext context) throws CompilerException {
         if(lines.isEmpty()){
             return lines;
@@ -111,259 +116,7 @@ public class Preprocessor {
         return modifiedLines;
     }
 
-    private static void executeDirectives(List<String> lines, List<Path> includePaths, PreprocessingContext context) throws CompilerException {
-        for (int i = 0; i < lines.size(); /*deliberately empty - directives move lines themselves*/) {
-            String trimmed = lines.get(i).stripLeading();
-            if (trimmed.isEmpty()) {
-                ++i;
-                continue;
-            }
-
-            String directive = extractDirective(trimmed);
-            if(!directive.startsWith("#")) {
-                context.doReplacement(lines, i);
-                ++i;
-                continue;
-            }
-
-            //#line directives are ignored - those are for the compiler
-            i = switch (directive) {
-                case "#if" -> ifDirective(trimmed, i, lines, context);
-                case "#ifdef" -> ifdefDirective(trimmed, i, lines);
-                case "#ifndef" -> ifndefDirective(trimmed, i, lines);
-                case "#elif" -> elifDirective();
-                case "#else" -> elseDirective();
-                case "#endif" -> endifDirective();
-
-                case "#include" -> includeDirective(trimmed, i, lines, includePaths, context);
-                case "#define" -> defineDirective(trimmed, i, lines, context);
-                case "#undef" -> undefineDirective(trimmed, i, lines, context);
-                case "#error" -> errorDirective(trimmed, context);
-                case "#pragma" -> pragmaDirective(i, lines);
-              //case "": # empty statement - should be ignored
-
-                default -> i + 1;
-            };
-        }
-    }
-
-    private static int ifDirective(String trimmed, int i, List<String> lines, PreprocessingContext context) throws CompilerException {
-        //find else/elif/endif
-        int depth = 0;
-        int j = i; //declared outside to keep the value after the loop finishes
-        int currentClauseEnding = -1;
-        int blockEnding = -1;
-        for (; j < lines.size(); ++j) {
-            String jLine = lines.get(j).stripLeading();
-            String directive = extractDirective(jLine);
-            if (directive.contentEquals("#if") || directive.contentEquals("#ifdef") || directive.contentEquals("#ifndef")) {
-                depth += 1;
-            } else if (directive.contentEquals("#endif")) {
-                depth -= 1;
-            }
-
-            if (depth == 1 && (directive.contentEquals("#else") || directive.contentEquals("#elif"))) {
-                if (currentClauseEnding == -1) {
-                    currentClauseEnding = j;
-                }
-            }
-
-            if (depth == 0) {
-                if (currentClauseEnding == -1) {
-                    currentClauseEnding = j;
-                }
-                blockEnding = j;
-                break;
-            }
-        }
-        if (blockEnding == -1) {
-            throw new CompilerException("#if with no corresponding #endif");
-        }
-
-
-        //regex matches one or more continuous whitespace characters (except newlines) via a double negative
-        //TL;DR, it replaces each group of whitespace with a single space
-        String evaluatedLine = context.evaluateConstexprs(context.doReplacement(trimmed).replaceAll("[^\\S\\n]+", " "));
-        if (evaluatedLine.startsWith("#if 1")) {
-            //keep the clause, get rid of the rest of the block
-            lines.set(i, "\n");
-            for (int k = currentClauseEnding; k < blockEnding + 1; ++k) {
-                lines.set(k, "\n");
-            }
-
-            return i + 1;
-        }
-        else if(evaluatedLine.startsWith("#if 0")) {
-            //get rid of the clause, modify the #else/#elif to an #if 1/#elif {condition}
-            for (int k = i; k < currentClauseEnding; ++k) {
-                lines.set(k, "\n");
-            }
-
-            String line = lines.get(currentClauseEnding).stripLeading();
-            String directive = extractDirective(line);
-
-            if (directive.contentEquals("#elif")) {
-                lines.set(currentClauseEnding, "#if" + line.substring(5));
-            } else if (directive.contentEquals("#else")) {
-                lines.set(currentClauseEnding, "#if 1\n");
-            } else if (directive.contentEquals("#endif")) {
-                lines.set(currentClauseEnding, "\n");
-            }
-            return currentClauseEnding;
-        } else {
-            throw new CompilerException("#if directive had non-evaluatable condition: " + trimmed);
-        }
-    }
-
-    private static int ifdefDirective(String trimmed, int i, List<String> lines) {
-        lines.set(i, "#if defined(" + trimmed.substring(7, trimmed.length() - 1) + ")\n");
-        return i;
-    }
-
-    private static int ifndefDirective(String trimmed, int i, List<String> lines) {
-        lines.set(i, "#if !defined(" + trimmed.substring(8, trimmed.length() - 1) + ")\n");
-        return i;
-    }
-
-    private static int elifDirective() throws CompilerException {
-        throw new CompilerException("Unmatched #elif directive");
-    }
-
-    private static int elseDirective() throws CompilerException {
-        throw new CompilerException("Unmatched #else directive");
-    }
-
-    private static int endifDirective() throws CompilerException {
-        throw new CompilerException("Unmatched #endif directive");
-    }
-
-    private static int includeDirective(String trimmed, int i, List<String> lines, List<Path> includePaths, PreprocessingContext context) throws CompilerException {
-        int j = 8; //skip "#include"
-        for(; j < trimmed.length(); ++j) {
-            if (!Character.isWhitespace(trimmed.charAt(j))) {
-                break;
-            }
-        }
-
-        Path includePath = null;
-        if (trimmed.charAt(j) == '<') {
-            //angle include: check built-ins, then supplied
-            String path = extractIncludePath(trimmed, j, '>');
-            includePath = findAngleInclude(path, j, includePaths, context);
-        } else if (trimmed.charAt(j) == '"') {
-            //quote include: check local first, then supplied, then try for built-ins
-            String path = extractIncludePath(trimmed, j, '"');
-            includePath = findQuoteInclude(path, j, includePaths, context);
-        } else {
-            throw new CompilerException("Incorrectly formed #include: " + trimmed);
-        }
-
-        //preprocess the new file before inclusion
-        List<String> includedLines = openAsLines(includePath);
-        includedLines = preprocessLines(includePath, includedLines, includePaths, context);
-
-        //TODO line directives
-        //remove the include
-        lines.set(i, "\n");
-        //insert the lines
-        for (int k = includedLines.size() - 1; k >= 0; --k) {
-            lines.add(i + 1, includedLines.get(k));
-        }
-
-        return i + 1;
-    }
-
-    private static Path findAngleInclude(String path, int j, List<Path> includePaths, PreprocessingContext context) throws CompilerException {
-        Path asPath = Path.of(path);
-
-        //TODO check builtin headers
-        for (Path includePath : includePaths) {
-            Path fullPath = asPath.isAbsolute() ? asPath : includePath.resolve(asPath);
-            System.out.println(fullPath);
-            if (Files.exists(fullPath)) {
-                return fullPath;
-            }
-        }
-        throw new CompilerException("Failed to locate included file: " + path);
-    }
-
-    private static Path findQuoteInclude(String path, int j, List<Path> includePaths, PreprocessingContext context) throws CompilerException {
-        Path asPath = Path.of(path);
-
-        Path localPath = asPath.isAbsolute() ? asPath : context.getCurrentSourcePath().getParent().resolve(asPath);
-        if (Files.exists(localPath)) {
-            return localPath;
-        }
-
-        for (Path includePath : includePaths) {
-            Path fullPath = asPath.isAbsolute() ? asPath : includePath.resolve(asPath);
-            if (Files.exists(fullPath)) {
-                return fullPath;
-            }
-        }
-        //TODO check builtin headers
-        throw new CompilerException("Failed to locate included file: " + path);
-    }
-
-    private static String extractIncludePath(String trimmed, int j, char delimiter) throws CompilerException {
-        int backslashCount = 0;
-        for (int k = j + 1; k < trimmed.length(); ++k) {
-            if (trimmed.charAt(k) == '\\') {
-                backslashCount += 1;
-            } else {
-                backslashCount = 0;
-            }
-
-            if (trimmed.charAt(k) == delimiter && backslashCount % 2 == 0) {
-                return trimmed.substring(j + 1, k);
-            }
-        }
-        throw new CompilerException("#include did not close: " + trimmed);
-    }
-
-
-    private static int defineDirective(String trimmed, int i, List<String> lines, PreprocessingContext context) throws CompilerException {
-        context.define(trimmed);
-        lines.set(i, "\n");
-        return i + 1;
-    }
-
-    private static int undefineDirective(String trimmed, int i, List<String> lines, PreprocessingContext context) throws CompilerException {
-        String identifier = PreprocessorDefinition.findIdentifier(trimmed, 7);
-        if (isValidIdentifier(identifier)) {
-            context.undefine(identifier);
-        } else {
-            throw new CompilerException("Attempted to undefine invalid identifier \"" + identifier + "\"" + " on line: " + trimmed);
-        }
-
-        lines.set(i, "\n");
-        return i + 1;
-    }
-
-    private static int errorDirective(String trimmed, PreprocessingContext context) throws CompilerException {
-        throw new CompilerException(context.doReplacement(trimmed));
-    }
-
-    private static int pragmaDirective(int i, List<String> lines) {
-        //currently, no pragma directives do anything.
-        lines.set(i, "\n");
-        return i + 1;
-    }
-
-
-    private static String extractDirective(String trimmed) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < trimmed.length(); ++i) {
-            if(Character.isWhitespace(trimmed.charAt(i))) {
-                break;
-            }
-            sb.append(trimmed.charAt(i));
-        }
-
-        return sb.toString();
-    }
-
-
+    //TODO update
     private static void removeComments(List<String> lines, boolean verbose) throws CompilerException {
         boolean inMultiline = false;
         boolean wasInMultiline = false;
@@ -446,6 +199,7 @@ public class Preprocessor {
         }
     }
 
+    //TODO update
     private static void ensureEOFNewline(List<String> lines) {
         String lastLine = lines.getLast();
         if (lastLine.isEmpty()) {
@@ -462,6 +216,7 @@ public class Preprocessor {
         }
     }
 
+    //TODO update
     private static void mergeSourceLines(List<String> lines) {
         for (int i = lines.size() - 2; i > -1; --i) {
             String line = lines.get(i);
@@ -476,6 +231,7 @@ public class Preprocessor {
         }
     }
 
+    //TODO update
     private static void replaceTrigraphs(List<String> lines) {
         lines.replaceAll(s -> s
                 .replace("??=", "#")

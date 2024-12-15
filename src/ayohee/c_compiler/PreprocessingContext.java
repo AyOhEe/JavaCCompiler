@@ -11,7 +11,8 @@ public class PreprocessingContext {
     private final int REPLACEMENT_LIMIT = 16;
 
 
-    private HashMap<String, PreprocessorDefinition> macros = new HashMap<>();
+    //TODO update
+    //private HashMap<String, PreprocessorDefinition> macros = new HashMap<>();
     private Stack<Path> fileStack;
     private Path originalSourcePath;
     private boolean yesMode;
@@ -23,11 +24,12 @@ public class PreprocessingContext {
         this.yesMode = yesMode;
         this.verbose = verbose;
 
+        //TODO update
         //don't do this through define or it'll throw for re-defining predefined macros
         //__FILE__ and __LINE__ are handled as special cases, as they are file dependant
-        macros.put("__TIME__", PreprocessorDefinition.parse("__TIME__ " + formatTime(compilationStart) + "\n", 0));
-        macros.put("__DATE__", PreprocessorDefinition.parse("__DATE__ " + formatDate(compilationStart) + "\n", 0));
-        macros.put("__STDC__", PreprocessorDefinition.parse("__STDC__ 1" + "\n", 0));
+        //macros.put("__TIME__", PreprocessorDefinition.parse("__TIME__ " + formatTime(compilationStart) + "\n", 0));
+        //macros.put("__DATE__", PreprocessorDefinition.parse("__DATE__ " + formatDate(compilationStart) + "\n", 0));
+        //macros.put("__STDC__", PreprocessorDefinition.parse("__STDC__ 1" + "\n", 0));
     }
 
     private static String formatDate(LocalDateTime compilationStart) {
@@ -55,28 +57,13 @@ public class PreprocessingContext {
         return String.format("\"%02d:%02d:%02d\"", compilationStart.getHour(), compilationStart.getMinute(), compilationStart.getSecond());
     }
 
-    private static String escapePath(Path sourcePath) {
-        return "\"" + sourcePath.toString().replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
-    }
-
-    public boolean isDefined(String identifier) {
-        return macros.containsKey(identifier);
-    }
-
-    public void define(String statement) throws CompilerException {
-        String identifier = PreprocessorDefinition.findIdentifier(statement, 7);
-        if (Preprocessor.isValidIdentifier(identifier)) {
-            macros.put(identifier, PreprocessorDefinition.parse(statement, 7));
-        } else {
-            throw new CompilerException("Attempted to define invalid identifier \"" + identifier + "\"" + " on line: " + statement);
-        }
-    }
-
-    public void undefine(String identifier) {
+    //TODO update
+    /*public void undefine(String identifier) {
         macros.remove(identifier);
-    }
+    }*/
 
-    public void doReplacement(List<String> lines, int i) throws CompilerException {
+    //TODO update
+    /*public void doReplacement(List<String> lines, int i) throws CompilerException {
         boolean wasUpdated = true;
         int depth = 0;
         while (wasUpdated) {
@@ -89,7 +76,6 @@ public class PreprocessingContext {
             for(Map.Entry<String, PreprocessorDefinition> entry : macros.entrySet()) {
                 entry.getValue().replaceInstances(entry.getKey(), lines, i, verbose);
             }
-            lines.set(i, handleDoublehashConcatenation(lines.get(i)));
 
             wasUpdated = !initialLine.contentEquals(lines.get(i));
         }
@@ -101,22 +87,12 @@ public class PreprocessingContext {
         doReplacement(lines, 0);
 
         return lines.getFirst();
-    }
-
-    private String handleDoublehashConcatenation(String line) {
-        //TODO this
-        return line;
-    }
-
-    public String evaluateConstexprs(String line) {
-        //TODO this
-        //     thankfully, this only needs to handle one line constexprs for preprocessing conditional blocks.
-        return line;
-    }
+    }*/
 
     public void fileDeeper(Path nextFile) throws CompilerException {
         fileStack.push(nextFile);
-        macros.put("__FILE__", PreprocessorDefinition.parse("__FILE__ " + escapePath(fileStack.peek()) + "\n", 0));
+        //TODO update
+        //macros.put("__FILE__", PreprocessorDefinition.parse("__FILE__ " + escapePath(fileStack.peek()) + "\n", 0));
 
         if (fileStack.size() > MAX_FILE_DEPTH) {
             throw new CompilerException("Maximum #include depth reached");
@@ -124,8 +100,9 @@ public class PreprocessingContext {
     }
     public void fileOut() throws CompilerException {
         fileStack.pop();
-        String macro = fileStack.empty() ? "\"UNKNOWN\"\n" : escapePath(fileStack.peek()) + "\n";
-        macros.put("__FILE__", PreprocessorDefinition.parse("__FILE__ " + macro, 0));
+        //TODO update
+        //String macro = fileStack.empty() ? "\"UNKNOWN\"\n" : escapePath(fileStack.peek()) + "\n";
+        //macros.put("__FILE__", PreprocessorDefinition.parse("__FILE__ " + macro, 0));
     }
 
     public Path getOriginalSourcePath() {
