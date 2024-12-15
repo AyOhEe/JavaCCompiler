@@ -1,5 +1,6 @@
 package ayohee.c_compiler;
 
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -11,7 +12,6 @@ import java.util.List;
 
 
 public class Preprocessor {
-    //TODO update
     public static ArrayList<Path> preprocess(ArrayList<Path> sourceFiles, ArrayList<Path> includePaths, Path ctxPath, Path ppOutputPath, boolean yesMode, boolean verbose) throws CompilerException {
         ArrayList<Path> compilationUnits = new ArrayList<>();
         LocalDateTime compilationTime = LocalDateTime.now();
@@ -26,7 +26,6 @@ public class Preprocessor {
         return compilationUnits;
     }
 
-    //TODO update
     private static PreprocessingContext findPPCtx(Path ctxPath, Path sf, LocalDateTime compilationTime, boolean yesMode, boolean verbose) throws CompilerException {
         PreprocessingContext ctx = new PreprocessingContext(sf, compilationTime, yesMode, verbose);
         if (Files.exists(ctxPath)) {
@@ -40,23 +39,21 @@ public class Preprocessor {
         return ctx;
     }
 
-    //TODO update
     private static void loadContext(Path sf, PreprocessingContext context) throws CompilerException {
-        List<String> lines = openAsLines(sf);
-        preprocessLines(sf, lines, new ArrayList<>(), context);
+        String fileContents = readFileToString(sf);
+        preprocessString(sf, fileContents, new ArrayList<>(), context);
     }
 
 
-    //TODO update
     private static Path preprocessFile(Path sf, ArrayList<Path> includePaths, PreprocessingContext context, Path ppOutputPath) throws CompilerException {
-        List<String> lines = openAsLines(sf);
-        List<String> processedLines = preprocessLines(sf, lines, includePaths, context);
+        String fileContents = readFileToString(sf);
+        List<PreprocessingToken> tokens = preprocessString(sf, fileContents, includePaths, context);
 
 
         Path compilationUnitPath = Paths.get(ppOutputPath.toAbsolutePath().toString(), getUnitFilename(context.getOriginalSourcePath()));
         try (FileWriter writer = new FileWriter(compilationUnitPath.toFile())) {
-            for (String processedLine : processedLines) {
-                writer.write(processedLine);
+            for (PreprocessingToken token : tokens) {
+                writer.write(token.toString());
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -67,19 +64,15 @@ public class Preprocessor {
         return compilationUnitPath;
     }
 
-    private static List<String> openAsLines(Path sf) {
-        List<String> lines = null;
+    private static String readFileToString(Path sf) {
         try {
-            lines = Files.readAllLines(sf);
-            for(int i = 1; i < lines.size(); ++i) {
-                lines.set(i - 1, lines.get(i - 1) + "\n");
-            }
+            return Files.readString(sf);
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("Failed to open " + sf);
+            System.out.println("Failed to read " + sf);
             System.exit(2);
+            return "";
         }
-        return lines;
     }
 
     private static String getUnitFilename(Path sf) {
@@ -88,36 +81,81 @@ public class Preprocessor {
         return filename.substring(0, filename.length() - 2) + ".i";
     }
 
-    //TODO update
-    private static List<String> preprocessLines(Path filePath, List<String> lines, List<Path> includePaths, PreprocessingContext context) throws CompilerException {
-        if(lines.isEmpty()){
-            return lines;
+    private static List<PreprocessingToken> preprocessString(Path filePath, String fileContents, List<Path> includePaths, PreprocessingContext context) throws CompilerException {
+        if(fileContents.isBlank()){
+            return new ArrayList<>();
         }
         context.fileDeeper(filePath);
 
-        List<String> modifiedLines = new ArrayList<>(lines);
-
         //phase 1: trigraph replacement
-        replaceTrigraphs(modifiedLines);
+        String workingContents = replaceTrigraphs(fileContents);
+
+        //tokenise - only after trigraph replacement. trigraph replacement is easier (for me) this way
+        List<PreprocessingToken> tokens = tokenize(workingContents, context.isVerbose());
 
         //phase 2: eof == newline enforcement and \ + \n removal
-        mergeSourceLines(modifiedLines);
-        ensureEOFNewline(modifiedLines);
+        tokens = mergeSourceLines(tokens);
+        tokens = ensureEOFNewline(tokens);
 
         //phase 3: comment removal
-        removeComments(modifiedLines, context.isVerbose());
+        tokens = removeComments(tokens, context.isVerbose());
         //phase 4: preprocessing directive execution and macro expansion. #include + 1-4 happens here
-        executeDirectives(modifiedLines, includePaths, context);
+        tokens = executeDirectives(tokens, includePaths, context);
 
         //phase 5 and 6 technically count as preprocessor responsibilities,
         //but practically belong to the compiler and should be handled after tokenisation
 
         context.fileOut();
-        return modifiedLines;
+        return tokens;
+    }
+
+
+    private static String replaceTrigraphs(String fileContents) {
+        return fileContents
+                .replace("??=", "#")
+                .replace("??(", "[")
+                .replace("??/", "\\")
+                .replace("??)", "]")
+                .replace("??'", "^")
+                .replace("??<", "{")
+                .replace("??!", "|")
+                .replace("??>", "}")
+                .replace("??-", "~");
+    }
+
+
+    private static List<PreprocessingToken> tokenize(String workingContents, boolean verbose) {
+        //TODO this
+        return new ArrayList<>();
     }
 
     //TODO update
-    private static void removeComments(List<String> lines, boolean verbose) throws CompilerException {
+    private static List<PreprocessingToken> mergeSourceLines(List<PreprocessingToken> tokens) {
+        return tokens;
+    }
+
+    //TODO update
+    private static List<PreprocessingToken> ensureEOFNewline(List<PreprocessingToken> tokens) {
+        /*String lastLine = lines.getLast();
+        if (lastLine.isEmpty()) {
+            lines.set(lines.size() - 1, "\n");
+        } else {
+            if (!lastLine.endsWith("\n")) {
+                lines.set(lines.size() - 1, lastLine + "\n");
+            }
+        }
+
+        if (lastLine.contains("\\\n")) {
+            //TODO warning
+            System.out.println("Backslash-newline at end of file");
+        }*/
+        return tokens;
+    }
+
+    //TODO update
+    private static List<PreprocessingToken> removeComments(List<PreprocessingToken> tokens, boolean verbose) throws CompilerException {
+        //TODO reference this logic when doing tokenization
+        /*
         boolean inMultiline = false;
         boolean wasInMultiline = false;
         boolean inString = false;
@@ -197,54 +235,16 @@ public class Preprocessor {
 
             wasInMultiline = inMultiline;
         }
+        */
+        return tokens;
     }
 
-    //TODO update
-    private static void ensureEOFNewline(List<String> lines) {
-        String lastLine = lines.getLast();
-        if (lastLine.isEmpty()) {
-            lines.set(lines.size() - 1, "\n");
-        } else {
-            if (!lastLine.endsWith("\n")) {
-                lines.set(lines.size() - 1, lastLine + "\n");
-            }
-        }
-
-        if (lastLine.contains("\\\n")) {
-            //TODO warning
-            System.out.println("Backslash-newline at end of file");
-        }
+    private static List<PreprocessingToken> executeDirectives(List<PreprocessingToken> tokens, List<Path> includePaths, PreprocessingContext context) {
+        //TODO this
+        return tokens;
     }
 
-    //TODO update
-    private static void mergeSourceLines(List<String> lines) {
-        for (int i = lines.size() - 2; i > -1; --i) {
-            String line = lines.get(i);
-            if (line.length() < 2) {
-                continue;
-            }
-
-            if (line.endsWith("\\\n")) {
-                lines.set(i, line.substring(0, line.length() - 2) + lines.get(i + 1));
-                lines.set(i + 1, "\n");
-            }
-        }
-    }
-
-    //TODO update
-    private static void replaceTrigraphs(List<String> lines) {
-        lines.replaceAll(s -> s
-                .replace("??=", "#")
-                .replace("??(", "[")
-                .replace("??/", "\\")
-                .replace("??)", "]")
-                .replace("??'", "^")
-                .replace("??<", "{")
-                .replace("??!", "|")
-                .replace("??>", "}")
-                .replace("??-", "~"));
-    }
-
+    //TODO verify this is correct
     public static boolean isValidIdentifier(String identifier) throws CompilerException {
         switch (identifier) {
             case "__LINE__", "__FILE__", "__DATE__", "__TIME__", "__STDC__" -> throw new CompilerException("Attempted to redefine or undefine predefined macro: " + identifier);
