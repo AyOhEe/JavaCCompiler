@@ -90,12 +90,12 @@ public class Preprocessor {
         //phase 1: trigraph replacement
         String workingContents = replaceTrigraphs(fileContents);
 
-        //tokenise - only after trigraph replacement. trigraph replacement is easier (for me) this way
-        List<PreprocessingToken> tokens = tokenize(workingContents, context.isVerbose());
-
         //phase 2: eof == newline enforcement and \ + \n removal
-        tokens = mergeSourceLines(tokens);
-        tokens = ensureEOFNewline(tokens);
+        workingContents = ensureEOFNewline(workingContents, context);
+        workingContents = mergeSourceLines(workingContents);
+
+
+        List<PreprocessingToken> tokens = Tokenizer.tokenize(workingContents, context.isVerbose());
 
         //phase 3: comment removal
         tokens = removeComments(tokens, context.isVerbose());
@@ -120,36 +120,54 @@ public class Preprocessor {
                 .replace("??<", "{")
                 .replace("??!", "|")
                 .replace("??>", "}")
-                .replace("??-", "~");
+                .replace("??-", "~")
+                .replace("\r\n", "\n"); //i hate carriage returns. make newline detection and manipulation awful
     }
 
 
-    private static List<PreprocessingToken> tokenize(String workingContents, boolean verbose) {
-        //TODO this
-        return new ArrayList<>();
-    }
-
-    //TODO update
-    private static List<PreprocessingToken> mergeSourceLines(List<PreprocessingToken> tokens) {
-        return tokens;
-    }
-
-    //TODO update
-    private static List<PreprocessingToken> ensureEOFNewline(List<PreprocessingToken> tokens) {
-        /*String lastLine = lines.getLast();
-        if (lastLine.isEmpty()) {
-            lines.set(lines.size() - 1, "\n");
-        } else {
-            if (!lastLine.endsWith("\n")) {
-                lines.set(lines.size() - 1, lastLine + "\n");
+    private static String mergeSourceLines(String fileContents) {
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        int newlineDuplications = 0;
+        while (i < fileContents.length()) {
+            if (fileContents.charAt(i) == '\n' && newlineDuplications != 0) {
+                for (int j = 0; j < newlineDuplications; ++j) {
+                    sb.append('\n');
+                }
+                newlineDuplications = 0;
             }
+
+            if (fileContents.charAt(i) == '\\' && fileContents.charAt(i + 1) == '\n') {
+                i += 2;
+                newlineDuplications += 1;
+                continue;
+            }
+
+            sb.append(fileContents.charAt(i));
+            ++i;
         }
 
-        if (lastLine.contains("\\\n")) {
-            //TODO warning
-            System.out.println("Backslash-newline at end of file");
-        }*/
-        return tokens;
+        //any newlines that haven't been introduced at the end of the file should be placed now
+        for (int j = 0; j < newlineDuplications; ++j) {
+            sb.append('\n');
+        }
+
+        return sb.toString();
+    }
+
+    private static String ensureEOFNewline(String fileContents, PreprocessingContext context) throws CompilerException {
+        if (fileContents.endsWith("\\\n")) {
+            throw new CompilerException("Backslash-newline at end of file: " + context.getCurrentSourcePath());
+        }
+        if (fileContents.isBlank() || fileContents.endsWith("\n")) {
+            return fileContents;
+        }
+
+        if (fileContents.endsWith("\\")) {
+            throw new CompilerException("Backslash-newline at end of file: " + context.getCurrentSourcePath());
+        } else {
+            return fileContents + '\n';
+        }
     }
 
     //TODO update
