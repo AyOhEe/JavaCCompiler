@@ -7,7 +7,8 @@ public class PreprocessingToken {
         PP_NUMBER,
         CHAR_CONST,
         STRING_LIT,
-        PUNCTUATOR,
+        OPERATOR_PUNCTUATOR,
+        NEWLINE,
         OTHER
     }
 

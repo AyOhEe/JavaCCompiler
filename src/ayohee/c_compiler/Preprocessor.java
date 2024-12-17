@@ -95,7 +95,7 @@ public class Preprocessor {
         workingContents = mergeSourceLines(workingContents);
 
 
-        List<PreprocessingToken> tokens = Tokenizer.tokenize(workingContents, context.isVerbose());
+        List<PreprocessingToken> tokens = Tokenizer.tokenize(workingContents, context);
 
         //phase 3: comment removal
         tokens = removeComments(tokens, context.isVerbose());
