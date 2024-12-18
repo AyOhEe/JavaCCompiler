@@ -28,6 +28,11 @@ public class PreprocessingToken {
 
     @Override
     public String toString() {
-        return asString;
+        if (type != TokenType.STRING_LIT && type != TokenType.CHAR_CONST) {
+            return asString;
+        }
+        else {
+            return Tokenizer.inverseEscapeStringLiteral(asString);
+        }
     }
 }

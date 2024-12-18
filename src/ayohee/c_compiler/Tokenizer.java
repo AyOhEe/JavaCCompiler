@@ -5,11 +5,7 @@ import java.util.List;
 
 public class Tokenizer {
     public static List<PreprocessingToken> tokenize(String workingContents, PreprocessingContext context) throws CompilerException {
-        //TODO this
         List<PreprocessingToken> tokens = new ArrayList<>();
-        //tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.OTHER, workingContents));
-
-
         for (int i = 0; i < workingContents.length();) {
             try {
                 i = parseNextToken(tokens, workingContents, i, context);
@@ -110,10 +106,44 @@ public class Tokenizer {
             return -1;
         }
 
+        int j = i + 1;
+        int backslashCount = 0;
+        for (; j < workingContents.length(); ++j) {
+            if (backslashCount % 2 == 0 && workingContents.charAt(j) == '\'') {
+                tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.CHAR_CONST, '\'' + escapeStringLiteral(workingContents.substring(i + 1, j)) + '\''));
+                return j + 1;
+            }
+
+            if (workingContents.charAt(j) == '\\') {
+                ++backslashCount;
+            } else {
+                backslashCount = 0;
+            }
+        }
+
         return -1;
     }
 
     private static int tryGetStringLiteral(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) {
+        if (workingContents.charAt(i) != '"') {
+            return -1;
+        }
+
+        int j = i + 1;
+        int backslashCount = 0;
+        for (; j < workingContents.length(); ++j) {
+            if (backslashCount % 2 == 0 && workingContents.charAt(j) == '"') {
+                tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, '"' + escapeStringLiteral(workingContents.substring(i + 1, j)) + '"'));
+                return j + 1;
+            }
+
+            if (workingContents.charAt(j) == '\\') {
+                ++backslashCount;
+            } else {
+                backslashCount = 0;
+            }
+        }
+
         return -1;
     }
 
@@ -198,15 +228,108 @@ public class Tokenizer {
     }
 
 
-    private static String escapeString(String unescaped) {
-        return unescaped
-                .replace("\\\\", "\\")
-                .replace("\\b", "\b")
-                .replace("\\f", "\f")
-                .replace("\\n", "\n")
-                .replace("\\r", "\r")
-                .replace("\\t", "\t")
-                .replace("\\\"", "\"")
-                .replace("\\'", "'");
+
+    public static String escapeStringLiteral(String unescaped) {
+        //TODO octal/hexadecimal escapes
+        StringBuilder sb = new StringBuilder();
+        int i = 0;
+        for (; i < unescaped.length() - 1; ++i) {
+            String nextTwoChars = unescaped.substring(i, i + 2);
+            switch (nextTwoChars) {
+                case "\\\\":
+                    sb.append("\\");
+                    ++i;
+                    break;
+
+                case "\\\"":
+                    sb.append("\"");
+                    ++i;
+                    break;
+
+                case "\\t":
+                    sb.append("\t");
+                    ++i;
+                    break;
+
+                case "\\'":
+                    sb.append("\'");
+                    ++i;
+                    break;
+
+                case "\\r":
+                    sb.append("\r");
+                    ++i;
+                    break;
+
+                case "\\n":
+                    sb.append("\n");
+                    ++i;
+                    break;
+
+                case "\\f":
+                    sb.append("\f");
+                    ++i;
+                    break;
+
+                case "\\b":
+                    sb.append("\b");
+                    ++i;
+                    break;
+
+                default:
+                    sb.append(unescaped.charAt(i));
+            }
+        }
+        if (unescaped.length() >= 2 && i == unescaped.length() - 1) {
+            sb.append(unescaped.charAt(unescaped.length() - 1));
+        }
+
+        return sb.toString();
+    }
+
+    public static String inverseEscapeStringLiteral(String escaped) {
+        //TODO octal/hexadecimal escapes
+        StringBuilder sb = new StringBuilder();
+        for (int i = 1; i < escaped.length() - 1; ++i) {
+            char nextChar = escaped.charAt(i);
+            switch (nextChar) {
+                case '\\':
+                    sb.append("\\\\");
+                    break;
+
+                case '\"':
+                    sb.append("\\\"");
+                    break;
+
+                case '\t':
+                    sb.append("\\t");
+                    break;
+
+                case '\'':
+                    sb.append("\\\'");
+                    break;
+
+                case '\r':
+                    sb.append("\\r");
+                    break;
+
+                case '\n':
+                    sb.append("\\n");
+                    break;
+
+                case '\f':
+                    sb.append("\\f");
+                    break;
+
+                case '\b':
+                    sb.append("\\b");
+                    break;
+
+                default:
+                    sb.append(nextChar);
+            }
+        }
+
+        return escaped.charAt(0) + sb.toString() + escaped.charAt(escaped.length() - 1);
     }
 }
