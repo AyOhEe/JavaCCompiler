@@ -63,7 +63,7 @@ public class Tokenizer {
                 + ":"
                 + j
                 + " "
-                + workingContents.substring(i, Math.max(workingContents.length(), i + 20))
+                + workingContents.substring(i, Math.min(workingContents.length(), i + 20))
         );
     }
 
@@ -72,17 +72,20 @@ public class Tokenizer {
         PreprocessingToken secondLastToken = tokens.size() >= 2 ? tokens.get(tokens.size() - 2) : null;
         return lastToken != null
                 && secondLastToken != null
-                && lastToken.getType() == PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR
-                && secondLastToken.getType() == PreprocessingToken.TokenType.IDENTIFIER
-                && lastToken.toString().contentEquals("#");
+                && lastToken.getType() == PreprocessingToken.TokenType.IDENTIFIER
+                && lastToken.toString().contentEquals("include")
+                && secondLastToken.getType() == PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR
+                && secondLastToken.toString().contentEquals("#");
     }
 
     private static int tryGetHeaderName(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) throws CompilerException {
         if (workingContents.charAt(i) != '<' && workingContents.charAt(i) != '"') {
             return -1;
         }
+        char startChar = workingContents.charAt(i) == '<' ? '<' : '"';
         char stopChar = workingContents.charAt(i) == '<' ? '>' : '"';
 
+        i += 1; //skip the starting character so the first quote doesn't immediately stop the parsing
         int startName = i;
         while (i < workingContents.length() && workingContents.charAt(i) != stopChar) {
             if (workingContents.charAt(i) == '\n') {
@@ -92,10 +95,10 @@ public class Tokenizer {
             ++i;
         }
 
-        String headerName = workingContents.substring(startName, i);
+        String headerName = startChar + workingContents.substring(startName, i) + stopChar;
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.HEADER_NAME, headerName));
 
-        return i;
+        return i + 1;
     }
 
     private static int tryGetPPNumber(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) {
