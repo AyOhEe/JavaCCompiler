@@ -23,7 +23,11 @@ public class Tokenizer {
 
     private static int parseNextToken(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) throws CompilerException {
         int j = i;
-        for (; j < workingContents.length() && Character.isWhitespace(workingContents.charAt(j)); ++j) {
+        for (; j < workingContents.length(); ++j) {
+            if (!Character.isWhitespace(workingContents.charAt(j))) {
+                break;
+            }
+
             if (workingContents.charAt(j) == '\n') {
                 tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
                 return j + 1;
@@ -111,6 +115,15 @@ public class Tokenizer {
     }
 
     private static int tryGetOperatorPunctuator(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) {
+        if (workingContents.length() > i + 7) {
+            String sevenCharsAhead = workingContents.substring(i, i + 7);
+            char seventhChar = workingContents.charAt(i + 7);
+            if (sevenCharsAhead.contentEquals("defined") && (seventhChar == '(' || Character.isWhitespace(seventhChar))) {
+                tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, sevenCharsAhead));
+                return i + 7;
+            }
+        }
+
         if (workingContents.length() > i + 6) {
             String sixCharsAhead = workingContents.substring(i, i + 6);
             char seventhChar = workingContents.charAt(i + 6);
@@ -162,7 +175,23 @@ public class Tokenizer {
     }
 
     private static int tryGetIdentifier(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) {
-        return -1;
+        StringBuilder sb = new StringBuilder();
+        char currentChar = workingContents.charAt(i);
+        if (!Character.isLetter(currentChar) && currentChar != '_') {
+            return -1;
+        }
+        sb.append(currentChar);
+
+        for (int j = i + 1; j < workingContents.length(); ++j) {
+            currentChar = workingContents.charAt(j);
+            if (!Character.isLetterOrDigit(currentChar) && currentChar != '_') {
+                break;
+            }
+            sb.append(currentChar);
+        }
+
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, sb.toString()));
+        return i + sb.length();
     }
 
 
