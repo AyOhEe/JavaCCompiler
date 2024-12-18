@@ -49,11 +49,17 @@ public class Preprocessor {
         String fileContents = readFileToString(sf);
         List<PreprocessingToken> tokens = preprocessString(sf, fileContents, includePaths, context);
 
-
         Path compilationUnitPath = Paths.get(ppOutputPath.toAbsolutePath().toString(), getUnitFilename(context.getOriginalSourcePath()));
+        if (tokens.isEmpty()) {
+            return compilationUnitPath;
+        }
+
         try (FileWriter writer = new FileWriter(compilationUnitPath.toFile())) {
             for (PreprocessingToken token : tokens) {
                 writer.write(token.toString());
+                if (token.getType() != PreprocessingToken.TokenType.NEWLINE) {
+                    writer.write(" ");
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();

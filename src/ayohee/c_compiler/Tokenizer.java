@@ -11,16 +11,22 @@ public class Tokenizer {
 
 
         for (int i = 0; i < workingContents.length();) {
-            i = parseNextToken(tokens, workingContents, i, context);
+            try {
+                i = parseNextToken(tokens, workingContents, i, context);
+            } catch (StringIndexOutOfBoundsException e) {
+                throw new CompilerException("File " + context.getCurrentSourcePath() + " ended in incomplete preprocessing token", e);
+            }
         }
 
         return tokens;
     }
 
     private static int parseNextToken(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) throws CompilerException {
-        for (int j = i; j < workingContents.length() && Character.isWhitespace(workingContents.charAt(j)); ++j) {
+        int j = i;
+        for (; j < workingContents.length() && Character.isWhitespace(workingContents.charAt(j)); ++j) {
             if (workingContents.charAt(j) == '\n') {
                 tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
+                return j + 1;
             }
         }
 
@@ -28,22 +34,22 @@ public class Tokenizer {
 
         //header names must be searched first - they may otherwise register as string literals and identifiers
         boolean isIncludeStatement = isIncludeStatement(tokens);
-        if (isIncludeStatement && (nextChar = tryGetHeaderName(tokens, workingContents, i, context)) != -1) {
+        if (isIncludeStatement && (nextChar = tryGetHeaderName(tokens, workingContents, j, context)) != -1) {
             return nextChar;
         }
-        if ((nextChar = tryGetIdentifier(tokens, workingContents, i, context)) != -1) {
+        if ((nextChar = tryGetPPNumber(tokens, workingContents, j, context)) != -1) {
             return nextChar;
         }
-        if ((nextChar = tryGetPPNumber(tokens, workingContents, i, context)) != -1) {
+        if ((nextChar = tryGetCharConst(tokens, workingContents, j, context)) != -1) {
             return nextChar;
         }
-        if ((nextChar = tryGetCharConst(tokens, workingContents, i, context)) != -1) {
+        if ((nextChar = tryGetStringLiteral(tokens, workingContents, j, context)) != -1) {
             return nextChar;
         }
-        if ((nextChar = tryGetStringLiteral(tokens, workingContents, i, context)) != -1) {
+        if ((nextChar = tryGetOperatorPunctuator(tokens, workingContents, j, context)) != -1) {
             return nextChar;
         }
-        if ((nextChar = tryGetOperatorPunctuator(tokens, workingContents, i, context)) != -1) {
+        if ((nextChar = tryGetIdentifier(tokens, workingContents, j, context)) != -1) {
             return nextChar;
         }
 
@@ -51,7 +57,7 @@ public class Tokenizer {
                 "Unsure of token: "
                 + context.getCurrentSourcePath()
                 + ":"
-                + i
+                + j
                 + " "
                 + workingContents.substring(i, Math.max(workingContents.length(), i + 20))
         );
@@ -88,24 +94,75 @@ public class Tokenizer {
         return i;
     }
 
-    private static int tryGetIdentifier(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) {
-
-    }
-
     private static int tryGetPPNumber(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) {
-
+        return -1;
     }
 
     private static int tryGetCharConst(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) {
+        if (workingContents.charAt(i) != '\'') {
+            return -1;
+        }
 
+        return -1;
     }
 
     private static int tryGetStringLiteral(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) {
-
+        return -1;
     }
 
     private static int tryGetOperatorPunctuator(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) {
+        if (workingContents.length() > i + 6) {
+            String sixCharsAhead = workingContents.substring(i, i + 6);
+            char seventhChar = workingContents.charAt(i + 6);
+            if (sixCharsAhead.contentEquals("sizeof") && (seventhChar == '(' || Character.isWhitespace(seventhChar))) {
+                tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, sixCharsAhead));
+                return i + 6;
+            }
+        }
 
+        if (workingContents.length() > i + 3) {
+            String threeCharsAhead = workingContents.substring(i, i + 3);
+            switch (threeCharsAhead) {
+                case "<<=", ">>=", "...":
+                    tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, threeCharsAhead));
+                    return i + 3;
+            }
+        }
+
+        if (workingContents.length() > i + 2) {
+            String twoCharsAhead = workingContents.substring(i, i + 2);
+            switch (twoCharsAhead) {
+                case "++", "--", "<<", ">>",
+                        "<=", ">=", "==", "!=",
+                        "&&", "||",
+                        "*=", "/=", "%=", "+=", "-=", "&=", "^=", "|=",
+                        "->", "##":
+                    tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, twoCharsAhead));
+                    return i + 2;
+
+                case "//", "/*", "*/":
+                    tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.COMMENT, twoCharsAhead));
+                    return i + 2;
+            }
+        }
+
+        if (workingContents.length() > i + 1) {
+            char currentChar = workingContents.charAt(i);
+            switch (currentChar) {
+                case '[', ']', '(', ')', '{', '}', '.',
+                        '&', '*', '+', '-', '~', '!', '/', '%',
+                        '<', '>', '^', '|',
+                        '?', ':', '=', ',', '#', ';':
+                    tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, Character.toString(currentChar)));
+                    return i + 1;
+            }
+        }
+
+        return -1;
+    }
+
+    private static int tryGetIdentifier(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) {
+        return -1;
     }
 
 

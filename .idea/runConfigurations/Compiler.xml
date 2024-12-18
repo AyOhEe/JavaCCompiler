@@ -2,7 +2,7 @@
   <configuration default="false" name="Compiler" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="Main" />
     <module name="JavaCCompiler" />
-    <option name="PROGRAM_PARAMETERS" value="-p -nc -y -v -s c_src/hello_world --context c_src/hello_world/FLAGS.h --include c_src/hello_world/include" />
+    <option name="PROGRAM_PARAMETERS" value="-p -nc -y -v -s c_src/hello_world/token_test.c --include c_src/hello_world/include" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/wd" />
     <method v="2">
       <option name="Make" enabled="true" />
