@@ -185,7 +185,7 @@ public class Preprocessor {
         PreprocessingToken currentToken = tokens.get(i);
         if (currentToken.is("#") && (i == 0 || tokens.get(i - 1).is(PreprocessingToken.TokenType.NEWLINE))) {
             if (i + 1 < tokens.size() && tokens.get(i + 1).is(PreprocessingToken.TokenType.IDENTIFIER)) {
-                return executeDirective(tokens, includePaths, i + 1);
+                return executeDirective(tokens, includePaths, i + 1, context);
             } else {
                 throw new CompilerException("Invalid preprocessing directive: " + context.getCurrentSourcePath());
             }
@@ -196,10 +196,97 @@ public class Preprocessor {
         return i + 1;
     }
 
-    private static int executeDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i) {
+    private static int executeDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
         System.out.println("Found directive: " + tokens.get(i).toString());
-        return i;
+
+        PreprocessingToken token = tokens.get(i);
+        tokens.remove(i); //directive name itself
+        tokens.remove(i - 1); //hashtag
+        //leaving the first token afterwards now at i - 1
+
+        return switch (token.toString()) {
+            case "if" -> ifDirective(tokens, includePaths, i - 1, context);
+            case "ifdef" -> ifdefDirective(tokens, includePaths, i - 1, context);
+            case "ifndef" -> ifndefDirective(tokens, includePaths, i - 1, context);
+            case "elif" -> elifDirective(tokens, includePaths, i - 1, context);
+            case "else" -> elseDirective(tokens, includePaths, i - 1, context);
+            case "endif" -> endifDirective(tokens, includePaths, i - 1, context);
+            case "include" -> includeDirective(tokens, includePaths, i - 1, context);
+            case "define" -> defineDirective(tokens, includePaths, i - 1, context);
+            case "undef" -> undefDirective(tokens, includePaths, i - 1, context);
+            case "line" -> lineDirective(tokens, includePaths, i - 1, context);
+            case "error" -> errorDirective(tokens, includePaths, i - 1, context);
+            case "pragma" -> pragmaDirective(tokens, includePaths, i - 1, context);
+
+            default -> invalidDirective(tokens, includePaths, i - 1, context, token);
+        };
     }
+
+    private static int ifDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
+        //TODO this
+        return i + 1;
+    }
+
+    private static int ifdefDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
+        //TODO this
+        return i + 1;
+    }
+
+    private static int ifndefDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
+        //TODO this
+        return i + 1;
+    }
+
+    private static int elifDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
+        //TODO this
+        return i + 1;
+    }
+
+    private static int elseDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
+        //TODO this
+        return i + 1;
+    }
+
+    private static int endifDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
+        //TODO this
+        return i + 1;
+    }
+
+    private static int includeDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
+        //TODO this
+        return i + 1;
+    }
+
+    private static int defineDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
+        //TODO this
+        return i + 1;
+    }
+
+    private static int undefDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
+        //TODO this
+        return i + 1;
+    }
+
+    private static int lineDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
+        //TODO this
+        return i + 1;
+    }
+
+    private static int errorDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
+        //TODO this
+        return i + 1;
+    }
+
+    private static int pragmaDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
+        //TODO this
+        return i + 1;
+    }
+
+    private static int invalidDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context, PreprocessingToken token) {
+        //TODO this
+        return i + 1;
+    }
+
 
     //TODO verify this is correct
     public static boolean isValidIdentifier(String identifier) throws CompilerException {
