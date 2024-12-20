@@ -227,29 +227,55 @@ public class Preprocessor {
         return i + 1;
     }
 
-    private static int ifdefDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
-        //TODO this
-        return i + 1;
+    private static int ifdefDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
+        PreprocessingToken token = tokens.remove(i);
+        if (!token.is(PreprocessingToken.TokenType.IDENTIFIER)) {
+            throw new CompilerException("#ifdef statement without valid identifier: " + context.getCurrentSourcePath());
+        }
+
+        List<PreprocessingToken> newIfDirective = new ArrayList<>();
+        newIfDirective.add(new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, "#"));
+        newIfDirective.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "if"));
+        newIfDirective.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "defined"));
+        newIfDirective.add(new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, "("));
+        newIfDirective.add(token);
+        newIfDirective.add(new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, ")"));
+
+        tokens.addAll(i, newIfDirective);
+
+        return i;
     }
 
-    private static int ifndefDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
-        //TODO this
-        return i + 1;
+    private static int ifndefDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
+        PreprocessingToken token = tokens.remove(i);
+        if (!token.is(PreprocessingToken.TokenType.IDENTIFIER)) {
+            throw new CompilerException("#ifndef statement without valid identifier: " + context.getCurrentSourcePath());
+        }
+
+        List<PreprocessingToken> newIfDirective = new ArrayList<>();
+        newIfDirective.add(new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, "#"));
+        newIfDirective.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "if"));
+        newIfDirective.add(new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, "!"));
+        newIfDirective.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "defined"));
+        newIfDirective.add(new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, "("));
+        newIfDirective.add(token);
+        newIfDirective.add(new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, ")"));
+
+        tokens.addAll(i, newIfDirective);
+
+        return i;
     }
 
-    private static int elifDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
-        //TODO this
-        return i + 1;
+    private static int elifDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
+        throw new CompilerException("Unmatched #elif directive: " + context.getCurrentSourcePath());
     }
 
-    private static int elseDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
-        //TODO this
-        return i + 1;
+    private static int elseDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
+        throw new CompilerException("Unmatched #else directive: " + context.getCurrentSourcePath());
     }
 
-    private static int endifDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
-        //TODO this
-        return i + 1;
+    private static int endifDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
+        throw new CompilerException("Unmatched #endif directive: " + context.getCurrentSourcePath());
     }
 
     private static int includeDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
