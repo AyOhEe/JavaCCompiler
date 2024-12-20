@@ -9,7 +9,6 @@ public class PreprocessingToken {
         STRING_LIT,
         OPERATOR_PUNCTUATOR,
         NEWLINE,
-        COMMENT,
         OTHER
     }
 

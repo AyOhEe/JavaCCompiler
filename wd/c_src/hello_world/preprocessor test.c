@@ -3,7 +3,7 @@
 trigraphs:
     ??= == #
     ??( == [
-    ??/ == \ (extra text so these lines dont get squished)
+    "??/ == \\ (extra text so these lines dont get squished)"
     ??) == ]
     ??' == ^
     ??< == {

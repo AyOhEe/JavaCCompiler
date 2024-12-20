@@ -32,6 +32,10 @@ public class Tokenizer {
 
         int nextChar = -1;
 
+        if ((nextChar = tryHandleComment(tokens, workingContents, j, context)) != -1) {
+            return nextChar;
+        }
+
         //header names must be searched first - they may otherwise register as string literals and identifiers
         boolean isIncludeStatement = isIncludeStatement(tokens);
         if (isIncludeStatement && (nextChar = tryGetHeaderName(tokens, workingContents, j, context)) != -1) {
@@ -62,6 +66,51 @@ public class Tokenizer {
                 + workingContents.substring(i, Math.min(workingContents.length(), i + 20))
         );
     }
+
+    private static int tryHandleComment(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) throws CompilerException {
+        if (i + 1 >= workingContents.length()) {
+            return -1;
+        }
+
+        String nextTwo = workingContents.substring(i, i + 2);
+        return switch (nextTwo) {
+            case "//" -> commentUntilNewline(workingContents, i, context);
+            case "/*" -> commentUntilDelimiter(tokens, workingContents, i, context);
+            case "*/" -> throw new CompilerException("Unmatched multiline comment end delimiter: " + context.getCurrentSourcePath() + ":" + i);
+
+            default -> -1;
+        };
+    }
+
+    private static int commentUntilNewline(String workingContents, int i, PreprocessingContext context) {
+        while (i < workingContents.length()) {
+            if (workingContents.charAt(i) == '\n') {
+                return i;
+            }
+            ++i;
+        }
+
+        //all lines must end in a newline - this can never be reached, all going well
+        return -1;
+    }
+
+    private static int commentUntilDelimiter(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) throws CompilerException {
+        int j = i;
+        while (j + 1 < workingContents.length()) {
+            if (workingContents.charAt(j) == '\n') {
+                tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
+            }
+            if (workingContents.substring(j, j + 2).contentEquals("*/")) {
+                if (j - 1 >= 0 && workingContents.charAt(j - 1) != '/') {
+                    return j + 2;
+                }
+            }
+            ++j;
+        }
+
+        throw new CompilerException("Unmatched multiline comment begin delimiter: " + context.getCurrentSourcePath() + ":" + i);
+    }
+
 
     private static boolean isIncludeStatement(List<PreprocessingToken> tokens) {
         PreprocessingToken lastToken = tokens.isEmpty() ? null : tokens.getLast();
@@ -215,10 +264,6 @@ public class Tokenizer {
                         "*=", "/=", "%=", "+=", "-=", "&=", "^=", "|=",
                         "->", "##":
                     tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, twoCharsAhead));
-                    return i + 2;
-
-                case "//", "/*", "*/":
-                    tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.COMMENT, twoCharsAhead));
                     return i + 2;
             }
         }
