@@ -99,7 +99,7 @@ public class Preprocessor {
         //phase 2: eof == newline enforcement and \ + \n removal
         workingContents = ensureEOFNewline(workingContents, context);
         workingContents = mergeSourceLines(workingContents);
-        
+
         //phase 3: tokenization and comment removal
         List<PreprocessingToken> tokens = Tokenizer.tokenize(workingContents, context);
 
@@ -172,93 +172,6 @@ public class Preprocessor {
         } else {
             return fileContents + '\n';
         }
-    }
-
-    //TODO update
-    private static List<PreprocessingToken> removeComments(List<PreprocessingToken> tokens, boolean verbose) throws CompilerException {
-        //TODO reference this logic when doing tokenization
-        /*
-        boolean inMultiline = false;
-        boolean wasInMultiline = false;
-        boolean inString = false;
-        boolean inChar = false;
-        for(int i = 0; i < lines.size(); ++i) {
-            String line = lines.get(i);
-            char lastChar = '-'; //doesn't matter what it is as long as it's not something we check for
-            int backslashCount = 0;
-
-            int multilineBegin = -1;
-
-            for(int j = 0; j < line.length(); ++j) {
-                char atJ = line.charAt(j);
-                if (atJ == '\\') {
-                    backslashCount++;
-                    lastChar = atJ;
-                    continue;
-                }
-
-                if (atJ == '"' && !inMultiline && !inChar) {
-                    //only exit string literals if the quote is escaped
-                    inString = !(inString && backslashCount % 2 == 0);
-                }
-                else if (atJ == '\'' && !inMultiline && !inString) {
-                    //only exit char literals if the quote is escaped
-                    inChar = !(inChar && backslashCount % 2 == 0);
-                }
-                else if (lastChar == '/' && atJ == '/' && !(inString || inChar) && !inMultiline) {
-                    //double-slash comment. remove the slashes and the rest of the line.
-                    //newline gets removed in the substring, so replace it
-                    line = line.substring(0, j - 1) + "\n";
-                    lines.set(i, line);
-                    break;
-                }
-                else if (lastChar == '/' && atJ == '*' && !(inString || inChar) && !inMultiline) {
-                    //beginning of a multiline comment. don't remove text until we know the extent
-                    inMultiline = true;
-                    multilineBegin = j - 1;
-                }
-                else if (lastChar == '*' && atJ == '/' && !(inString || inChar) && inMultiline && multilineBegin != j - 2) {
-                    //end of a multiline comment
-                    inMultiline = false;
-
-                    if (multilineBegin != -1) {
-                        //only covered this line. remove the section and continue
-                        line = line.substring(0, multilineBegin) + line.substring(j + 1);
-                        lines.set(i, line);
-
-                        j = multilineBegin - 1; //continue from where the comment began (subtract 1 to account for ++j)
-                        lastChar = j != -1 ? line.charAt(j) : '-';
-
-                        multilineBegin = -1; //reset to ensure later comments on this line work fine
-                        continue;
-                    } else {
-                        //covered multiple lines. remove everything before this
-                        line = line.substring(j + 1);
-                        lines.set(i, line);
-
-                        j = -1; //continue from index 0 (subtract 1 to account for ++j)
-                        lastChar = '-';
-                        continue;
-                    }
-                }
-
-                lastChar = atJ;
-                backslashCount = 0;
-            }
-
-            if(multilineBegin != -1) {
-                lines.set(i, line.substring(0, multilineBegin) + "\n");
-            }
-
-            //last line was a comment and this line is entirely a comment. remove it
-            if (wasInMultiline && inMultiline) {
-                lines.set(i, "\n");
-            }
-
-            wasInMultiline = inMultiline;
-        }
-        */
-        return tokens;
     }
 
     private static List<PreprocessingToken> executeDirectives(List<PreprocessingToken> tokens, List<Path> includePaths, PreprocessingContext context) {
