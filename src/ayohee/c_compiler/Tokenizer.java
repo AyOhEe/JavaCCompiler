@@ -98,7 +98,38 @@ public class Tokenizer {
     }
 
     private static int tryGetPPNumber(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) {
-        return -1;
+        //it's weird, but these don't have to be valid floats/ints.
+        //as long as it *could* be either, and *isn't* something else, it's valid.
+        //check page 33 of ISO/IEC 9899.1990 if you don't believe me. there's a McKeeman form
+        char firstChar = workingContents.charAt(i);
+        if (firstChar == '.' && i + 1 < workingContents.length()) {
+            char secondChar = workingContents.charAt(i + 1);
+            if (!Character.isDigit(secondChar)) {
+                return -1;
+            }
+        } else if (!Character.isDigit(firstChar)) {
+            return -1;
+        }
+
+        int j = i;
+        while (j < workingContents.length()) {
+            char currentChar = workingContents.charAt(j);
+            if (currentChar != '.' && currentChar != '_' && !Character.isDigit(currentChar) && !Character.isLetter(currentChar)) {
+                break;
+            }
+
+            if (j + 1 < workingContents.length()) {
+                char nextChar = workingContents.charAt(j + 1);
+                if ((currentChar == 'e' || currentChar == 'E') && (nextChar == '+' || nextChar == '-')) {
+                    ++j; //skip extra char as [eE][+-] blocks come together, and the [+-] would get rejected
+                }
+            }
+
+            ++j;
+        }
+
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, workingContents.substring(i, j)));
+        return j;
     }
 
     private static int tryGetCharConst(List<PreprocessingToken> tokens, String workingContents, int i, PreprocessingContext context) {
