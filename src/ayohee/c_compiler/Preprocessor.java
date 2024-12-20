@@ -10,7 +10,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class Preprocessor {
     public static ArrayList<Path> preprocess(ArrayList<Path> sourceFiles, ArrayList<Path> includePaths, Path ctxPath, Path ppOutputPath, boolean yesMode, boolean verbose) throws CompilerException {
         ArrayList<Path> compilationUnits = new ArrayList<>();
@@ -174,9 +173,32 @@ public class Preprocessor {
         }
     }
 
-    private static List<PreprocessingToken> executeDirectives(List<PreprocessingToken> tokens, List<Path> includePaths, PreprocessingContext context) {
-        //TODO this
+    private static List<PreprocessingToken> executeDirectives(List<PreprocessingToken> tokens, List<Path> includePaths, PreprocessingContext context) throws CompilerException {
+        for (int i = 0; i < tokens.size();) {
+            i = handleToken(tokens, includePaths, i, context);
+        }
+
         return tokens;
+    }
+
+    private static int handleToken(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
+        PreprocessingToken currentToken = tokens.get(i);
+        if (currentToken.is("#") && (i == 0 || tokens.get(i - 1).is(PreprocessingToken.TokenType.NEWLINE))) {
+            if (i + 1 < tokens.size() && tokens.get(i + 1).is(PreprocessingToken.TokenType.IDENTIFIER)) {
+                return executeDirective(tokens, includePaths, i + 1);
+            } else {
+                throw new CompilerException("Invalid preprocessing directive: " + context.getCurrentSourcePath());
+            }
+        }
+
+        //TODO macro replacement
+
+        return i + 1;
+    }
+
+    private static int executeDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i) {
+        System.out.println("Found directive: " + tokens.get(i).toString());
+        return i;
     }
 
     //TODO verify this is correct

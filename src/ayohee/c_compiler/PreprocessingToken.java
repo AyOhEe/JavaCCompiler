@@ -34,4 +34,11 @@ public class PreprocessingToken {
             return Tokenizer.inverseEscapeStringLiteral(asString);
         }
     }
+
+    public boolean is(String match) {
+        return match.contentEquals(asString);
+    }
+    public boolean is(TokenType match) {
+        return match == type;
+    }
 }

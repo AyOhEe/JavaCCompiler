@@ -1,7 +1,7 @@
 #if __STDC__
 
 trigraphs:
-    ??= == #
+    "??= == #"
     ??( == [
     "??/ == \\ (extra text so these lines dont get squished)"
     ??) == ]
