@@ -99,12 +99,10 @@ public class Preprocessor {
         //phase 2: eof == newline enforcement and \ + \n removal
         workingContents = ensureEOFNewline(workingContents, context);
         workingContents = mergeSourceLines(workingContents);
-
-
+        
+        //phase 3: tokenization and comment removal
         List<PreprocessingToken> tokens = Tokenizer.tokenize(workingContents, context);
 
-        //phase 3: comment removal
-        tokens = removeComments(tokens, context.isVerbose());
         //phase 4: preprocessing directive execution and macro expansion. #include + 1-4 happens here
         tokens = executeDirectives(tokens, includePaths, context);
 
