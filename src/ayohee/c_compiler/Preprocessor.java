@@ -134,10 +134,9 @@ public class Preprocessor {
         int newlineDuplications = 0;
         while (i < fileContents.length()) {
             if (fileContents.charAt(i) == '\n' && newlineDuplications != 0) {
-                for (int j = 0; j < newlineDuplications; ++j) {
+                for (; newlineDuplications > 0; --newlineDuplications) {
                     sb.append('\n');
                 }
-                newlineDuplications = 0;
             }
 
             if (fileContents.charAt(i) == '\\' && fileContents.charAt(i + 1) == '\n') {

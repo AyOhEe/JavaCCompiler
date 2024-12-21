@@ -1,4 +1,4 @@
-#if __STDC__
+??=if __STDC__
 
 trigraphs:
     "??= == #"
