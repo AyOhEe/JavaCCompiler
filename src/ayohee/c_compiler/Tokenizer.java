@@ -190,7 +190,7 @@ public class Tokenizer {
         int backslashCount = 0;
         for (; j < workingContents.length(); ++j) {
             if (backslashCount % 2 == 0 && workingContents.charAt(j) == '\'') {
-                tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.CHAR_CONST, '\'' + escapeStringLiteral(workingContents.substring(i + 1, j)) + '\''));
+                tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.CHAR_CONST, escapeStringLiteral(workingContents.substring(i + 1, j))));
                 return j + 1;
             }
 
@@ -213,7 +213,7 @@ public class Tokenizer {
         int backslashCount = 0;
         for (; j < workingContents.length(); ++j) {
             if (backslashCount % 2 == 0 && workingContents.charAt(j) == '"') {
-                tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, '"' + escapeStringLiteral(workingContents.substring(i + 1, j)) + '"'));
+                tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, escapeStringLiteral(workingContents.substring(i + 1, j))));
                 return j + 1;
             }
 

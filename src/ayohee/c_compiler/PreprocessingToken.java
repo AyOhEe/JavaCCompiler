@@ -27,12 +27,11 @@ public class PreprocessingToken {
 
     @Override
     public String toString() {
-        if (type != TokenType.STRING_LIT && type != TokenType.CHAR_CONST) {
-            return asString;
-        }
-        else {
-            return Tokenizer.inverseEscapeStringLiteral(asString);
-        }
+        return switch (type) {
+            case STRING_LIT -> '"' + Tokenizer.inverseEscapeStringLiteral(asString) + '"';
+            case CHAR_CONST -> '\'' + Tokenizer.inverseEscapeStringLiteral(asString) + '\'';
+            default -> asString;
+        };
     }
 
     public String unescapedString() {

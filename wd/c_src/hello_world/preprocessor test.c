@@ -103,12 +103,10 @@ int main() {
     return FUNCTION_LIKE1(     2   ,    0     );
 }
 
-"random string literal on line __LINE__"
+"random\t string literal on line __LINE__"
 
 #define A_THING
 
 //continued lines \
 at the end again \
 but still well-formed
-
-#error "this should stop compilation"
