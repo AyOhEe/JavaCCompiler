@@ -317,9 +317,8 @@ public class Preprocessor {
         return i + 1;
     }
 
-    private static int invalidDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context, PreprocessingToken token) {
-        //TODO this
-        return i + 1;
+    private static int invalidDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context, PreprocessingToken token) throws CompilerException {
+        throw new CompilerException("Invalid preprocessing directive in: " + context.getCurrentSourcePath() + ": found directive " + token.toString());
     }
 
 
