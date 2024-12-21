@@ -297,9 +297,12 @@ public class Preprocessor {
         return i + 1;
     }
 
-    private static int errorDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
-        //TODO this
-        return i + 1;
+    private static int errorDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
+        PreprocessingToken message = tokens.get(i);
+        if (message.is(PreprocessingToken.TokenType.STRING_LIT)) {
+            throw new CompilerException("#error directive in " + context.getCurrentSourcePath() + ": " + message.unescapedString());
+        }
+        throw new CompilerException("Poorly formed #error directive in " + context.getCurrentSourcePath());
     }
 
     private static int pragmaDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {

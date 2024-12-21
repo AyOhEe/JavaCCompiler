@@ -110,3 +110,5 @@ int main() {
 //continued lines \
 at the end again \
 but still well-formed
+
+#error "this should stop compilation"

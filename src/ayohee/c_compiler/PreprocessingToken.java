@@ -35,6 +35,10 @@ public class PreprocessingToken {
         }
     }
 
+    public String unescapedString() {
+        return asString;
+    }
+
     public boolean is(String match) {
         return match.contentEquals(asString);
     }
