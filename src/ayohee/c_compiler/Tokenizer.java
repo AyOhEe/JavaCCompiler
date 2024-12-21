@@ -291,7 +291,8 @@ public class Tokenizer {
         }
         sb.append(currentChar);
 
-        for (int j = i + 1; j < workingContents.length(); ++j) {
+        int j = i + 1;
+        for (; j < workingContents.length(); ++j) {
             currentChar = workingContents.charAt(j);
             if (!Character.isLetterOrDigit(currentChar) && currentChar != '_') {
                 break;
@@ -299,8 +300,15 @@ public class Tokenizer {
             sb.append(currentChar);
         }
 
-        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, sb.toString()));
-        return i + sb.length();
+        PreprocessingToken.TokenType type = PreprocessingToken.TokenType.IDENTIFIER;
+        if (workingContents.charAt(j) == '(') {
+            type = PreprocessingToken.TokenType.FUNCTIONLIKE_MACRO_DEFINITION;
+            sb.append('(');
+            ++j;
+        }
+
+        tokens.add(new PreprocessingToken(type, sb.toString()));
+        return j;
     }
 
 

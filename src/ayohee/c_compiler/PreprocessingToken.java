@@ -9,6 +9,7 @@ public class PreprocessingToken {
         STRING_LIT,
         OPERATOR_PUNCTUATOR,
         NEWLINE,
+        FUNCTIONLIKE_MACRO_DEFINITION,
         OTHER
     }
 

@@ -282,14 +282,24 @@ public class Preprocessor {
         return i + 1;
     }
 
-    private static int defineDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
-        //TODO this
-        return i + 1;
+    private static int defineDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
+        PreprocessingToken label = tokens.get(i);
+        if (label.is(PreprocessingToken.TokenType.FUNCTIONLIKE_MACRO_DEFINITION)) {
+            return context.defineFunctionlike(tokens, i);
+        } else if (label.is(PreprocessingToken.TokenType.IDENTIFIER)) {
+            return context.defineObjectlike(tokens, i);
+        } else {
+            throw new CompilerException("Poorly formed #define directive in " + context.getCurrentSourcePath());
+        }
     }
 
-    private static int undefDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
-        //TODO this
-        return i + 1;
+    private static int undefDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
+        if (!tokens.get(i).is(PreprocessingToken.TokenType.IDENTIFIER)) {
+            throw new CompilerException("Poorly formed #undef directive in " + context.getCurrentSourcePath());
+        }
+        context.undefine(tokens.get(i).toString());
+        tokens.remove(i);
+        return i;
     }
 
     private static int lineDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {

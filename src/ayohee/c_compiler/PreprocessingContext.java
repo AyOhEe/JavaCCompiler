@@ -11,8 +11,7 @@ public class PreprocessingContext {
     private final int REPLACEMENT_LIMIT = 16;
 
 
-    //TODO update
-    //private HashMap<String, PreprocessorDefinition> macros = new HashMap<>();
+    private HashMap<String, PreprocessorDefinition> macros = new HashMap<>();
     private Stack<Path> fileStack;
     private Path originalSourcePath;
     private boolean yesMode;
@@ -24,12 +23,35 @@ public class PreprocessingContext {
         this.yesMode = yesMode;
         this.verbose = verbose;
 
-        //TODO update
         //don't do this through define or it'll throw for re-defining predefined macros
         //__FILE__ and __LINE__ are handled as special cases, as they are file dependant
-        //macros.put("__TIME__", PreprocessorDefinition.parse("__TIME__ " + formatTime(compilationStart) + "\n", 0));
-        //macros.put("__DATE__", PreprocessorDefinition.parse("__DATE__ " + formatDate(compilationStart) + "\n", 0));
-        //macros.put("__STDC__", PreprocessorDefinition.parse("__STDC__ 1" + "\n", 0));
+        constructTimeMacro(compilationStart);
+        constructDateMacro(compilationStart);
+        constructSTDCMacro();
+    }
+    private void constructTimeMacro(LocalDateTime compilationStart) {
+        List<PreprocessingToken> tokens = new ArrayList<>();
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "__TIME__"));
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, formatTime(compilationStart)));
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
+
+        defineObjectlike(tokens, 0);
+    }
+    private void constructDateMacro(LocalDateTime compilationStart) {
+        List<PreprocessingToken> tokens = new ArrayList<>();
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "__DATE__"));
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, formatDate(compilationStart)));
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
+
+        defineObjectlike(tokens, 0);
+    }
+    private void constructSTDCMacro() {
+        List<PreprocessingToken> tokens = new ArrayList<>();
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "__STDC__"));
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, "1"));
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
+
+        defineObjectlike(tokens, 0);
     }
 
     private static String formatDate(LocalDateTime compilationStart) {
@@ -56,11 +78,6 @@ public class PreprocessingContext {
     private static String formatTime(LocalDateTime compilationStart) {
         return String.format("\"%02d:%02d:%02d\"", compilationStart.getHour(), compilationStart.getMinute(), compilationStart.getSecond());
     }
-
-    //TODO update
-    /*public void undefine(String identifier) {
-        macros.remove(identifier);
-    }*/
 
     //TODO update
     /*public void doReplacement(List<String> lines, int i) throws CompilerException {
@@ -118,5 +135,25 @@ public class PreprocessingContext {
     }
     public boolean isYesMode() {
         return yesMode;
+    }
+
+    public int defineObjectlike(List<PreprocessingToken> tokens, int i) {
+        //TODO this
+        while (!tokens.get(i).is(PreprocessingToken.TokenType.NEWLINE)) {
+            tokens.remove(i);
+        }
+        return i;
+    }
+
+    public int defineFunctionlike(List<PreprocessingToken> tokens, int i) {
+        //TODO this
+        while (!tokens.get(i).is(PreprocessingToken.TokenType.NEWLINE)) {
+            tokens.remove(i);
+        }
+        return i;
+    }
+
+    public void undefine(String name) {
+        macros.remove(name);
     }
 }
