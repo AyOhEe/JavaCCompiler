@@ -304,7 +304,16 @@ public class Preprocessor {
     }
 
     private static int pragmaDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
-        //TODO this
+        //pragma directives currently do nothing and are entirely ignored
+        for (int j = i; j < tokens.size(); ++j) {
+            if (tokens.get(j).is(PreprocessingToken.TokenType.NEWLINE)) {
+                for (int k = 0; k < (j - i); ++k) {
+                    tokens.remove(i);
+                }
+                break;
+            }
+        }
+
         return i + 1;
     }
 

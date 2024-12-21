@@ -26,7 +26,7 @@ so this is still line25
 
 #if defined(FLAGS_WORKED)
 
-#endif
+//#endif
 
 "string_literal with spaces     and long gaps" and then 'a character literal that\'s way too long'
 "testing escapes \' \n \b \r \\\\\t \\t \" the string should still continue \\" but should stop there
