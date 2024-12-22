@@ -29,29 +29,29 @@ public class PreprocessingContext {
         constructDateMacro(compilationStart);
         constructSTDCMacro();
     }
-    private void constructTimeMacro(LocalDateTime compilationStart) {
+    private void constructTimeMacro(LocalDateTime compilationStart) throws CompilerException {
         List<PreprocessingToken> tokens = new ArrayList<>();
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "__TIME__"));
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, formatTime(compilationStart)));
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
 
-        defineObjectlike(tokens, 0);
+        defineObjectlike(tokens, 0, true);
     }
-    private void constructDateMacro(LocalDateTime compilationStart) {
+    private void constructDateMacro(LocalDateTime compilationStart) throws CompilerException {
         List<PreprocessingToken> tokens = new ArrayList<>();
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "__DATE__"));
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, formatDate(compilationStart)));
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
 
-        defineObjectlike(tokens, 0);
+        defineObjectlike(tokens, 0, true);
     }
-    private void constructSTDCMacro() {
+    private void constructSTDCMacro() throws CompilerException {
         List<PreprocessingToken> tokens = new ArrayList<>();
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "__STDC__"));
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, "1"));
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
 
-        defineObjectlike(tokens, 0);
+        defineObjectlike(tokens, 0, true);
     }
 
     private static String formatDate(LocalDateTime compilationStart) {
@@ -108,8 +108,12 @@ public class PreprocessingContext {
 
     public void fileDeeper(Path nextFile) throws CompilerException {
         fileStack.push(nextFile);
-        //TODO update
-        //macros.put("__FILE__", PreprocessorDefinition.parse("__FILE__ " + escapePath(fileStack.peek()) + "\n", 0));
+
+        List<PreprocessingToken> tokens = new ArrayList<>();
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "__FILE__"));
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, fileStack.peek().toString()));
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
+        defineObjectlike(tokens, 0, true);
 
         if (fileStack.size() > MAX_FILE_DEPTH) {
             throw new CompilerException("Maximum #include depth reached");
@@ -117,9 +121,13 @@ public class PreprocessingContext {
     }
     public void fileOut() throws CompilerException {
         fileStack.pop();
-        //TODO update
-        //String macro = fileStack.empty() ? "\"UNKNOWN\"\n" : escapePath(fileStack.peek()) + "\n";
-        //macros.put("__FILE__", PreprocessorDefinition.parse("__FILE__ " + macro, 0));
+        String name = fileStack.empty() ? "\"UNKNOWN\"" : fileStack.peek().toString();
+
+        List<PreprocessingToken> tokens = new ArrayList<>();
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "__FILE__"));
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, name));
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
+        defineObjectlike(tokens, 0, true);
     }
 
     public Path getOriginalSourcePath() {
@@ -137,12 +145,26 @@ public class PreprocessingContext {
         return yesMode;
     }
 
-    public int defineObjectlike(List<PreprocessingToken> tokens, int i) {
-        //TODO this
+    public int defineObjectlike(List<PreprocessingToken> tokens, int i) throws CompilerException {
+        return defineObjectlike(tokens, i, false);
+    }
+    private int defineObjectlike(List<PreprocessingToken> tokens, int i, boolean force) throws CompilerException {
+        PreprocessingToken label = tokens.remove(i);
+
+        List<PreprocessingToken> replacementList = new ArrayList<>();
         while (!tokens.get(i).is(PreprocessingToken.TokenType.NEWLINE)) {
-            tokens.remove(i);
+            replacementList.add(tokens.remove(i));
         }
-        return i;
+        if (replacementList.isEmpty()) {
+            replacementList.add(new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, "1"));
+        }
+
+        if (label.is(PreprocessingToken.TokenType.IDENTIFIER) && (force || Preprocessor.isValidIdentifier(label.toString()))) {
+            macros.put(label.toString(), new ObjectLikePreprocessorDefinition(replacementList));
+            return i;
+        } else {
+            throw new CompilerException("Tried to define macro with invalid name: \"" + label.toString() + "\"" + getCurrentSourcePath());
+        }
     }
 
     public int defineFunctionlike(List<PreprocessingToken> tokens, int i) {
