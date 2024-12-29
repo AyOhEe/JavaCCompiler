@@ -155,9 +155,6 @@ public class PreprocessingContext {
         while (!tokens.get(i).is(PreprocessingToken.TokenType.NEWLINE)) {
             replacementList.add(tokens.remove(i));
         }
-        if (replacementList.isEmpty()) {
-            replacementList.add(new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, "1"));
-        }
 
         if (label.is(PreprocessingToken.TokenType.IDENTIFIER) && (force || Preprocessor.isValidIdentifier(label.toString()))) {
             macros.put(label.toString(), new ObjectLikePreprocessorDefinition(replacementList));
@@ -167,12 +164,21 @@ public class PreprocessingContext {
         }
     }
 
-    public int defineFunctionlike(List<PreprocessingToken> tokens, int i) {
-        //TODO this
+    public int defineFunctionlike(List<PreprocessingToken> tokens, int i) throws CompilerException {
+        List<PreprocessingToken> statement = new ArrayList<>();
         while (!tokens.get(i).is(PreprocessingToken.TokenType.NEWLINE)) {
-            tokens.remove(i);
+            statement.add(tokens.remove(i));
         }
-        return i;
+
+        String label = statement.getFirst().toString();
+        label = label.substring(label.length() - 1);
+
+        if (tokens.get(i).is(PreprocessingToken.TokenType.FUNCTIONLIKE_MACRO_DEFINITION) && Preprocessor.isValidIdentifier(label)) {
+            macros.put(label, new FunctionLikePreprocessorDefinition(statement));
+            return i;
+        } else {
+            throw new CompilerException("Tried to define macro with invalid name \"" + label + "\"" + getCurrentSourcePath());
+        }
     }
 
     public void undefine(String name) {
