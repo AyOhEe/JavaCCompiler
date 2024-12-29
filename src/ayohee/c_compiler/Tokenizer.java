@@ -303,8 +303,6 @@ public class Tokenizer {
         PreprocessingToken.TokenType type = PreprocessingToken.TokenType.IDENTIFIER;
         if (workingContents.charAt(j) == '(') {
             type = PreprocessingToken.TokenType.FUNCTIONLIKE_MACRO_DEFINITION;
-            sb.append('(');
-            ++j;
         }
 
         tokens.add(new PreprocessingToken(type, sb.toString()));

@@ -292,8 +292,6 @@ public class Preprocessor {
     }
 
     private static int includeQHeader(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context, String headerPath) throws CompilerException {
-        //TODO this
-
         Path resolved = context.getCurrentSourcePath().resolve(headerPath);
         if (tryIncludeFile(resolved, tokens, i, includePaths, context)) {
             return i;
