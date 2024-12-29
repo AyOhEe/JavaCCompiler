@@ -277,8 +277,27 @@ public class Preprocessor {
         throw new CompilerException("Unmatched #endif directive: " + context.getCurrentSourcePath());
     }
 
-    private static int includeDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
-        //TODO this
+    private static int includeDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
+        PreprocessingToken headerName = tokens.remove(i);
+        if (!headerName.is(PreprocessingToken.TokenType.HEADER_NAME)) {
+            throw new CompilerException("#include directive not followed by valid header name: " + context.getCurrentSourcePath());
+        }
+
+        boolean isQHeader = headerName.toString().startsWith("\"");
+        String headerAsString = headerName.toString();
+        String headerPath = headerAsString.substring(1, headerAsString.length() - 1);
+        if (isQHeader) {
+            return includeQHeader(tokens, includePaths, i, context, headerPath);
+        } else {
+            return includeHHeader(tokens, includePaths, i, context, headerPath);
+        }
+    }
+
+    private static int includeQHeader(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context, String headerPath) {
+        return i + 1;
+    }
+
+    private static int includeHHeader(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context, String headerPath) {
         return i + 1;
     }
 
