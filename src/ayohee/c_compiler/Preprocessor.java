@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Preprocessor {
-    public static ArrayList<Path> preprocess(ArrayList<Path> sourceFiles, ArrayList<Path> includePaths, Path ctxPath, Path ppOutputPath, boolean yesMode, boolean verbose) throws CompilerException {
+    public static List<Path> preprocess(List<Path> sourceFiles, List<Path> includePaths, Path ctxPath, Path ppOutputPath, boolean yesMode, boolean verbose) throws CompilerException {
         ArrayList<Path> compilationUnits = new ArrayList<>();
         LocalDateTime compilationTime = LocalDateTime.now();
         for (Path sf : sourceFiles) {
@@ -44,7 +44,7 @@ public class Preprocessor {
     }
 
 
-    private static Path preprocessFile(Path sf, ArrayList<Path> includePaths, PreprocessingContext context, Path ppOutputPath) throws CompilerException {
+    private static Path preprocessFile(Path sf, List<Path> includePaths, PreprocessingContext context, Path ppOutputPath) throws CompilerException {
         String fileContents = readFileToString(sf);
         List<PreprocessingToken> tokens = preprocessString(sf, fileContents, includePaths, context);
 
@@ -196,8 +196,6 @@ public class Preprocessor {
     }
 
     private static int executeDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
-        System.out.println("Found directive: " + tokens.get(i).toString());
-
         PreprocessingToken token = tokens.get(i);
         tokens.remove(i); //directive name itself
         tokens.remove(i - 1); //hashtag
@@ -293,15 +291,50 @@ public class Preprocessor {
         }
     }
 
-    private static int includeQHeader(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context, String headerPath) {
+    private static int includeQHeader(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context, String headerPath) throws CompilerException {
         //TODO this
-        return i + 1;
+
+        Path resolved = context.getCurrentSourcePath().resolve(headerPath);
+        if (tryIncludeFile(resolved, tokens, i, includePaths, context)) {
+            return i;
+        }
+
+        for (Path includePath : includePaths) {
+            resolved = includePath.resolve(headerPath);
+            if (tryIncludeFile(resolved, tokens, i, includePaths, context)) {
+                return i;
+            }
+        }
+
+        //TODO check built in. no built-in headers currently exist.
+
+        throw new CompilerException("Attempted to include nonexistent file: " + headerPath + " in " + context.getCurrentSourcePath());
     }
 
-    private static int includeHHeader(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context, String headerPath) {
-        //TODO this
-        return i + 1;
+    private static int includeHHeader(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context, String headerPath) throws CompilerException {
+        //TODO check built in. no built-in headers currently exist.
+
+        for (Path includePath : includePaths) {
+            Path resolved = includePath.resolve(headerPath);
+            if (tryIncludeFile(resolved, tokens, i, includePaths, context)) {
+                return i;
+            }
+        }
+
+        throw new CompilerException("Attempted to include nonexistent file: " + headerPath + " in " + context.getCurrentSourcePath());
     }
+
+    private static boolean tryIncludeFile(Path resolved, List<PreprocessingToken> tokens, int i, List<Path> includePaths, PreprocessingContext context) throws CompilerException {
+        if (!Files.exists(resolved)) {
+            return false;
+        }
+
+        //TODO line directives
+        String contents = readFileToString(resolved);
+        tokens.addAll(i, preprocessString(resolved, contents, includePaths, context));
+        return true;
+    }
+
 
     private static int defineDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
         PreprocessingToken label = tokens.get(i);

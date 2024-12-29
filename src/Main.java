@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -147,7 +148,7 @@ public class Main {
         //preprocess to compilation units
         //PREPROCESSING
         String msg = "Preprocessing will delete all files and directories in " + ppOutputPath + ". Are you sure? (y/n)";
-        ArrayList<Path> ppuFiles;
+        List<Path> ppuFiles;
         if(cleanup || confirmUserIntent(msg, yesMode)) {
             refreshPath(ppOutputPath, "Unable to refresh preprocessor output path at " + ppOutputPath);
             ppuFiles = Preprocessor.preprocess(sourceFiles, includePaths, ctxPath, ppOutputPath, yesMode, verbose);
