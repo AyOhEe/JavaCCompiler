@@ -374,7 +374,7 @@ public class Tokenizer {
     public static String inverseEscapeStringLiteral(String escaped) {
         //TODO octal/hexadecimal escapes
         StringBuilder sb = new StringBuilder();
-        for (int i = 1; i < escaped.length() - 1; ++i) {
+        for (int i = 0; i < escaped.length(); ++i) {
             char nextChar = escaped.charAt(i);
             switch (nextChar) {
                 case '\\':
@@ -414,6 +414,6 @@ public class Tokenizer {
             }
         }
 
-        return escaped.charAt(0) + sb.toString() + escaped.charAt(escaped.length() - 1);
+        return sb.toString();
     }
 }
