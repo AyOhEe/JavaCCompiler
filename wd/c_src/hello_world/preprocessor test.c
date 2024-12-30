@@ -98,7 +98,7 @@ TEST_DEFINITION
 
 int main() {
     //FUNCTION_LIKE1(2);
-    FUNCTION_LIKE1(2, 0);
+    FUNCTION_LIKE1(2, (3, 4));
     //FUNCTION_LIKE1(2,  0,  3);
     return FUNCTION_LIKE1(     2   ,    0     );
 }

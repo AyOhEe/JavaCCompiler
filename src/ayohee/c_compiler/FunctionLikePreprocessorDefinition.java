@@ -1,5 +1,6 @@
 package ayohee.c_compiler;
 
+import java.sql.Array;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -64,6 +65,34 @@ public class FunctionLikePreprocessorDefinition extends PreprocessorDefinition{
         tokens.remove(i);
         tokens.remove(i);
 
+        List<List<PreprocessingToken>> argumentTokens = new ArrayList<>();
+        extractArgumentsFromInvocation(argumentTokens, tokens, i);
+
         System.out.println("Function-like invocation: " + label);
+    }
+
+    private void extractArgumentsFromInvocation(List<List<PreprocessingToken>> argumentTokens, List<PreprocessingToken> tokens, int i) {
+        int parenDepth = 0;
+        PreprocessingToken currentToken = tokens.get(i);
+        List<PreprocessingToken> currentArgument = new ArrayList<>();
+        while (!(parenDepth == 0 && currentToken.is(")"))) {
+            if (currentToken.is("(")) {
+                ++parenDepth;
+                currentArgument.add(currentToken);
+            } else if (currentToken.is(")")) {
+                --parenDepth;
+                currentArgument.add(currentToken);
+            } else if (parenDepth == 0 && currentToken.is(",")) {
+                argumentTokens.add(currentArgument);
+                currentArgument = new ArrayList<>();
+            } else {
+                currentArgument.add(currentToken);
+            }
+
+            ++i;
+            currentToken = tokens.get(i);
+        }
+
+        argumentTokens.add(currentArgument);
     }
 }
