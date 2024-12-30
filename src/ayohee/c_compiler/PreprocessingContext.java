@@ -79,8 +79,7 @@ public class PreprocessingContext {
         return String.format("\"%02d:%02d:%02d\"", compilationStart.getHour(), compilationStart.getMinute(), compilationStart.getSecond());
     }
 
-    //TODO update
-    /*public void doReplacement(List<String> lines, int i) throws CompilerException {
+    public void doReplacement(List<PreprocessingToken> tokens, int i) throws CompilerException {
         boolean wasUpdated = true;
         int depth = 0;
         while (wasUpdated) {
@@ -88,23 +87,15 @@ public class PreprocessingContext {
             if (depth > REPLACEMENT_LIMIT) {
                 throw new CompilerException("Maximum replacement depth reached");
             }
-            String initialLine = lines.get(i);
+            PreprocessingToken initialToken = tokens.get(i);
 
             for(Map.Entry<String, PreprocessorDefinition> entry : macros.entrySet()) {
-                entry.getValue().replaceInstances(entry.getKey(), lines, i, verbose);
+                entry.getValue().replaceInstances(entry.getKey(), tokens, i);
             }
 
-            wasUpdated = !initialLine.contentEquals(lines.get(i));
+            wasUpdated = !initialToken.toString().contentEquals(tokens.get(i).toString());
         }
     }
-    public String doReplacement(String line) throws CompilerException {
-        List<String> lines = new ArrayList<>();
-        lines.add(line);
-
-        doReplacement(lines, 0);
-
-        return lines.getFirst();
-    }*/
 
     public void fileDeeper(Path nextFile) throws CompilerException {
         fileStack.push(nextFile);

@@ -58,5 +58,12 @@ public class FunctionLikePreprocessorDefinition extends PreprocessorDefinition{
     @Override
     public void replaceInstances(String label, List<PreprocessingToken> tokens, int i) throws CompilerException {
         //TODO
+        if (!tokens.get(i).is(label) || (tokens.size() > i + 1 && !tokens.get(i + 1).is("("))) {
+            return;
+        }
+        tokens.remove(i);
+        tokens.remove(i);
+
+        System.out.println("Function-like invocation: " + label);
     }
 }

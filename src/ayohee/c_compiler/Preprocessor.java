@@ -190,7 +190,7 @@ public class Preprocessor {
             }
         }
 
-        //TODO macro replacement
+        context.doReplacement(tokens, i);
 
         return i + 1;
     }
