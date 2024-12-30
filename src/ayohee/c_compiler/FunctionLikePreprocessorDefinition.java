@@ -1,6 +1,5 @@
 package ayohee.c_compiler;
 
-import java.sql.Array;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,20 +57,26 @@ public class FunctionLikePreprocessorDefinition extends PreprocessorDefinition{
 
     @Override
     public void replaceInstances(String label, List<PreprocessingToken> tokens, int i) throws CompilerException {
-        //TODO
         if (!tokens.get(i).is(label) || (tokens.size() > i + 1 && !tokens.get(i + 1).is("("))) {
             return;
         }
-        tokens.remove(i);
-        tokens.remove(i);
+        tokens.remove(i); // identifier
+        tokens.remove(i); // '('
 
         List<List<PreprocessingToken>> argumentTokens = new ArrayList<>();
-        extractArgumentsFromInvocation(argumentTokens, tokens, i);
+        int tokensToRemove = extractArgumentsFromInvocation(argumentTokens, tokens, i);
+        for (int j = 0; j < tokensToRemove; ++j) {
+            tokens.remove(i);
+        }
+
+        List<PreprocessingToken> replacement = generateReplacement(argumentTokens);
+        tokens.addAll(i, replacement);
 
         System.out.println("Function-like invocation: " + label);
     }
 
-    private void extractArgumentsFromInvocation(List<List<PreprocessingToken>> argumentTokens, List<PreprocessingToken> tokens, int i) {
+    private int extractArgumentsFromInvocation(List<List<PreprocessingToken>> argumentTokens, List<PreprocessingToken> tokens, int i) {
+        int tokensToRemove = 0;
         int parenDepth = 0;
         PreprocessingToken currentToken = tokens.get(i);
         List<PreprocessingToken> currentArgument = new ArrayList<>();
@@ -90,9 +95,28 @@ public class FunctionLikePreprocessorDefinition extends PreprocessorDefinition{
             }
 
             ++i;
+            tokensToRemove++;
             currentToken = tokens.get(i);
         }
 
         argumentTokens.add(currentArgument);
+        ++tokensToRemove; //get rid of the ")" too
+        return tokensToRemove;
+    }
+
+    private List<PreprocessingToken> generateReplacement(List<List<PreprocessingToken>> argumentTokens) {
+        List<PreprocessingToken> replacement = new ArrayList<>(replacementList);
+
+        for (int i = 0; i < replacement.size(); ++i) {
+            for (int j = 0; j < argumentNames.size(); ++j) {
+                if (replacement.get(i).is(argumentNames.get(j))) {
+                    replacement.remove(i);
+                    replacement.addAll(i, argumentTokens.get(j));
+                    --i; //stay on this token index: the -- and ++ cancel out.
+                }
+            }
+        }
+
+        return replacement;
     }
 }
