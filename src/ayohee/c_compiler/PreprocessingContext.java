@@ -162,7 +162,6 @@ public class PreprocessingContext {
         }
 
         String label = statement.getFirst().toString();
-        label = label.substring(0, label.length() - 1);
 
         if (statement.getFirst().is(PreprocessingToken.TokenType.FUNCTIONLIKE_MACRO_DEFINITION) && Preprocessor.isValidIdentifier(label)) {
             macros.put(label, new FunctionLikePreprocessorDefinition(statement));
