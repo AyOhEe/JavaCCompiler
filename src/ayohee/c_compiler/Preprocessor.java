@@ -224,25 +224,28 @@ public class Preprocessor {
         while(i < tokens.size() && !tokens.get(i).is(PreprocessingToken.TokenType.NEWLINE)) {
             condition.add(tokens.remove(i));
         }
+
         context.doReplacement(condition, 0);
-
-
-        //TODO eval condition
-
+        evalConstantExpressions(condition, context);
 
         int nearestClauseBeginNewline = findNearestIfClauseNewline(tokens, i);
         int endifEndNewline = findNearestEndifNewline(tokens, i);
-
         if (condition.size() == 1 && condition.getFirst().is("1")) {
             //if true, use block. remove between clause and endif
             removeExceptNewline(tokens, nearestClauseBeginNewline, endifEndNewline);
-        } else {
+        } else if (condition.size() == 1 && condition.getFirst().is("0")) {
             //if false, continue
             alterFollowingIfClause(tokens, nearestClauseBeginNewline + 2);
             removeExceptNewline(tokens, i, nearestClauseBeginNewline);
+        } else {
+            throw new CompilerException("#if directive with non-constant or otherwise invalid expression");
         }
 
         return i;
+    }
+
+    private static void evalConstantExpressions(List<PreprocessingToken> condition, PreprocessingContext context) {
+
     }
 
     private static int findNearestIfClauseNewline(List<PreprocessingToken> tokens, int i) throws CompilerException {

@@ -107,6 +107,9 @@ public class FunctionLikePreprocessorDefinition extends PreprocessorDefinition{
     private List<PreprocessingToken> generateReplacement(List<List<PreprocessingToken>> argumentTokens) {
         List<PreprocessingToken> replacement = new ArrayList<>(replacementList);
 
+        //TODO # operator - turn identifier into string lit
+        //TODO ## operator - join identifiers
+
         for (int i = 0; i < replacement.size(); ++i) {
             for (int j = 0; j < argumentNames.size(); ++j) {
                 if (replacement.get(i).is(argumentNames.get(j))) {
