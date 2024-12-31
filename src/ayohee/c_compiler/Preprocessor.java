@@ -219,9 +219,85 @@ public class Preprocessor {
         };
     }
 
-    private static int ifDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
-        //TODO this
-        return i + 1;
+    private static int ifDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
+        List<PreprocessingToken> condition = new ArrayList<>();
+        while(i < tokens.size() && !tokens.get(i).is(PreprocessingToken.TokenType.NEWLINE)) {
+            condition.add(tokens.remove(i));
+        }
+        context.doReplacement(condition, 0);
+
+
+        //TODO eval condition
+
+
+        int nearestClauseBeginNewline = findNearestIfClauseNewline(tokens, i);
+        int endifEndNewline = findNearestEndifNewline(tokens, i);
+
+        if (condition.size() == 1 && condition.getFirst().is("1")) {
+            //if true, use block. remove between clause and endif
+            removeExceptNewline(tokens, nearestClauseBeginNewline, endifEndNewline);
+        } else {
+            //if false, continue
+            alterFollowingIfClause(tokens, nearestClauseBeginNewline + 2);
+            removeExceptNewline(tokens, i, nearestClauseBeginNewline);
+        }
+
+        return i;
+    }
+
+    private static int findNearestIfClauseNewline(List<PreprocessingToken> tokens, int i) throws CompilerException {
+        int lastNewline = -1;
+        for (int j = i; j + 1 < tokens.size(); ++j) {
+            PreprocessingToken lastToken = tokens.get(j);
+            PreprocessingToken currentToken = tokens.get(j + 1);
+            if (lastToken.is("#") && (currentToken.is("elif") || currentToken.is("else") || currentToken.is("endif"))) {
+                return lastNewline;
+            } else if (lastToken.is(PreprocessingToken.TokenType.NEWLINE)) {
+                lastNewline = j;
+            }
+        }
+
+        throw new CompilerException("Malformed #if directive");
+    }
+
+    private static int findNearestEndifNewline(List<PreprocessingToken> tokens, int i) throws CompilerException {
+        for (int j = i; j + 1 < tokens.size(); ++j) {
+            PreprocessingToken lastToken = tokens.get(j);
+            PreprocessingToken currentToken = tokens.get(j + 1);
+            if (lastToken.is("#") && (currentToken.is("endif"))) {
+                while (!tokens.get(j).is(PreprocessingToken.TokenType.NEWLINE)) {
+                    ++j;
+                }
+                return j;
+            }
+        }
+
+        throw new CompilerException("Malformed #if directive");
+    }
+
+    private static void removeExceptNewline(List<PreprocessingToken> tokens, int from, int until) {
+        for (int j = from; j < until; ++j) {
+            if (tokens.get(j).is(PreprocessingToken.TokenType.NEWLINE)) {
+                continue;
+            }
+
+            tokens.remove(j);
+            --j; //correct for the removal - j + 1 would now be j, so we counteract the ++j in the loop
+            --until; //correct for the shortening of the list
+        }
+    }
+
+    private static void alterFollowingIfClause(List<PreprocessingToken> tokens, int i) {
+        PreprocessingToken directive = tokens.get(i);
+        if (directive.is("endif")) {
+            tokens.remove(i); //endif
+            tokens.remove(i - 1); //#
+        } else if (directive.is("else")) {
+            tokens.set(i, new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "if"));
+            tokens.add(i + 1, new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, "1"));
+        } else if (directive.is("elif")) {
+            tokens.set(i, new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "if"));
+        }
     }
 
     private static int ifdefDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
@@ -386,7 +462,6 @@ public class Preprocessor {
     }
 
 
-    //TODO verify this is correct
     public static boolean isValidIdentifier(String identifier) throws CompilerException {
         switch (identifier) {
             case "__LINE__", "__FILE__", "__DATE__", "__TIME__", "__STDC__" -> throw new CompilerException("Attempted to redefine or undefine predefined macro: " + identifier);

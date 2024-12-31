@@ -5,4 +5,8 @@
 void foo() {
     return;
 }
+
+char* whatFile() {
+    return __FILE__;
+}
 SUCCEEDED_NESTED

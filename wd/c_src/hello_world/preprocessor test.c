@@ -58,29 +58,27 @@ there is a comment /* right here that should be */ removed here, but should leav
 
 /*/ this is a valid comment */ there are two comments on this line /* here's the other one*/ and some text afterwards /* i lied there are three */
 
-//#elif 1
+#elif 1
 
 Should not show up
 
-//#endif
+#endif
 
-#if 0 //REINTRODUCE AFTER CONSTEXPR AND DEFINITIONS WORK
 #define TEST
 #ifdef TEST
 Should not appear if the below does
-//#endif
+#endif
 #ifndef TEST
 Should not appear if the above does
-//#endif
+#endif
 
 #undef TEST
 #ifdef TEST
 Should not appear if the below does
-//#endif
+#endif
 #ifndef TEST
 Should not appear if the above does
-//#endif
-//#endif
+#endif
 
 
 #define FUNCTION_LIKE1(foo, asjahflahfawff) (foo + asjahflahfawff)
