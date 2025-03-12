@@ -440,6 +440,11 @@ public class Preprocessor {
 
     private static int errorDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
         PreprocessingToken message = tokens.get(i);
+        if (message.is(PreprocessingToken.TokenType.NEWLINE)) {
+            //message is optional
+            message = new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, "");
+        }
+
         if (message.is(PreprocessingToken.TokenType.STRING_LIT)) {
             throw new CompilerException("#error directive in " + context.getCurrentSourcePath() + ": " + message.unescapedString());
         }
