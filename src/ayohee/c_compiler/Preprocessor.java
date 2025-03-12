@@ -10,6 +10,9 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+
+//TODO double check when i'm supposed to read all tokens until a newline, because i don't think i'm doing that
+
 public class Preprocessor {
     public static List<Path> preprocess(List<Path> sourceFiles, List<Path> includePaths, Path ctxPath, Path ppOutputPath, boolean yesMode, boolean verbose) throws CompilerException {
         ArrayList<Path> compilationUnits = new ArrayList<>();
@@ -439,6 +442,7 @@ public class Preprocessor {
     }
 
     private static int errorDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
+        //TODO use extractUntilNewline and conform to page 93
         PreprocessingToken message = tokens.get(i);
         if (message.is(PreprocessingToken.TokenType.NEWLINE)) {
             //message is optional
@@ -453,14 +457,7 @@ public class Preprocessor {
 
     private static int pragmaDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
         //pragma directives currently do nothing and are entirely ignored
-        for (int j = i; j < tokens.size(); ++j) {
-            if (tokens.get(j).is(PreprocessingToken.TokenType.NEWLINE)) {
-                for (int k = 0; k < (j - i); ++k) {
-                    tokens.remove(i);
-                }
-                break;
-            }
-        }
+        extractUntilNewline(tokens, i);
 
         return i + 1;
     }
@@ -487,5 +484,19 @@ public class Preprocessor {
         }
 
         return true;
+    }
+
+
+    public static List<PreprocessingToken> extractUntilNewline(List<PreprocessingToken> tokens, int i) {
+        List<PreprocessingToken> extracted = new ArrayList<>();
+        for (; i < tokens.size(); ++i) {
+            if (tokens.get(i).is(PreprocessingToken.TokenType.NEWLINE)) {
+                break;
+            }
+
+            extracted.add(tokens.remove(i));
+        }
+
+        return extracted;
     }
 }
