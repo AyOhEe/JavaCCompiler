@@ -17,17 +17,21 @@ public class PreprocessingContext {
     private boolean yesMode;
     private boolean verbose;
 
+    private int lineNumber;
+
     public PreprocessingContext(Path originalSourcePath, LocalDateTime compilationStart, boolean yesMode, boolean verbose) throws CompilerException {
         this.fileStack = new Stack<>();
         this.originalSourcePath = originalSourcePath;
         this.yesMode = yesMode;
         this.verbose = verbose;
+        this.lineNumber = 1;
 
         //don't do this through define or it'll throw for re-defining predefined macros
         //__FILE__ and __LINE__ are handled as special cases, as they are file dependant
         constructTimeMacro(compilationStart);
         constructDateMacro(compilationStart);
         constructSTDCMacro();
+        updateLineMacro();
     }
     private void constructTimeMacro(LocalDateTime compilationStart) throws CompilerException {
         List<PreprocessingToken> tokens = new ArrayList<>();
@@ -51,6 +55,16 @@ public class PreprocessingContext {
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, "1"));
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
 
+        defineObjectlike(tokens, 0, true);
+    }
+
+    private void updateLineMacro() throws CompilerException {
+        macros.remove("__LINE__");
+
+        List<PreprocessingToken> tokens = new ArrayList<>();
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "__LINE__"));
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, Integer.toString(lineNumber)));
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
         defineObjectlike(tokens, 0, true);
     }
 
@@ -171,7 +185,22 @@ public class PreprocessingContext {
         }
     }
 
-    public void undefine(String name) {
-        macros.remove(name);
+    public void undefine(String name) throws CompilerException {
+        if (Preprocessor.isValidIdentifier(name)) {
+            macros.remove(name);
+        } else {
+            throw new CompilerException("Tried to undefine macro with invalid name \"" + name + "\"" + getCurrentSourcePath());
+        }
+    }
+
+
+    public void setLineNumber(int line) throws CompilerException {
+        lineNumber = line;
+        updateLineMacro();
+    }
+
+    public void incrementLineNumber() throws CompilerException {
+        lineNumber += 1;
+        updateLineMacro();
     }
 }

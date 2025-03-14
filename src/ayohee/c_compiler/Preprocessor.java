@@ -194,6 +194,9 @@ public class Preprocessor {
         }
 
         context.doReplacement(tokens, i);
+        if (currentToken.is(PreprocessingToken.TokenType.NEWLINE)) {
+            context.incrementLineNumber();
+        }
 
         return i + 1;
     }
@@ -204,6 +207,7 @@ public class Preprocessor {
         tokens.remove(i - 1); //hashtag
         //leaving the first token afterwards now at i - 1
 
+        //TODO line counting
         return switch (token.toString()) {
             case "if" -> ifDirective(tokens, includePaths, i - 1, context);
             case "ifdef" -> ifdefDirective(tokens, includePaths, i - 1, context);
@@ -236,7 +240,7 @@ public class Preprocessor {
         if (condition.size() == 1 && condition.getFirst().is("1")) {
             //if true, use block. remove between clause and endif
             removeExceptNewline(tokens, nearestClauseBeginNewline, endifEndNewline);
-        } else if (condition.size() == 1 && condition.getFirst().is("0")) {
+        } else if (true || condition.size() == 1 && condition.getFirst().is("0")) {
             //if false, continue
             alterFollowingIfClause(tokens, nearestClauseBeginNewline + 2);
             removeExceptNewline(tokens, i, nearestClauseBeginNewline);
@@ -248,7 +252,7 @@ public class Preprocessor {
     }
 
     private static void evalConstantExpressions(List<PreprocessingToken> condition, PreprocessingContext context) {
-
+        //TODO this
     }
 
     private static int findNearestIfClauseNewline(List<PreprocessingToken> tokens, int i) throws CompilerException {
