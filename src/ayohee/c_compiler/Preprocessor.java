@@ -240,7 +240,7 @@ public class Preprocessor {
         if (condition.size() == 1 && condition.getFirst().is("1")) {
             //if true, use block. remove between clause and endif
             removeExceptNewline(tokens, nearestClauseBeginNewline, endifEndNewline);
-        } else if (true || condition.size() == 1 && condition.getFirst().is("0")) {
+        } else if (condition.size() == 1 && condition.getFirst().is("0")) {
             //if false, continue
             alterFollowingIfClause(tokens, nearestClauseBeginNewline + 2);
             removeExceptNewline(tokens, i, nearestClauseBeginNewline);
