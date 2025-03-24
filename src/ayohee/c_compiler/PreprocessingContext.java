@@ -103,7 +103,8 @@ public class PreprocessingContext {
             }
 
             wasUpdated = false;
-            for (int j = i; (singleToken && j < i + 1) && !tokens.get(j).is(PreprocessingToken.TokenType.NEWLINE); ++j) {
+            //              j is in bounds         stop when we hit a newline                                   if we're only to parse 1 token, stop after the first
+            for (int j = i; (j < tokens.size()) && (!tokens.get(j).is(PreprocessingToken.TokenType.NEWLINE)) && !(singleToken && j > i); ++j) {
                 wasUpdated |= replaceDefinitionCheck(tokens, j);
 
                 for(Map.Entry<String, PreprocessorDefinition> entry : macros.entrySet()) {
