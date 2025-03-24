@@ -10,7 +10,7 @@ public class Tokenizer {
             try {
                 i = parseNextToken(tokens, workingContents, i, context);
             } catch (StringIndexOutOfBoundsException e) {
-                throw new CompilerException("File " + context.getCurrentSourcePath() + " ended in incomplete preprocessing token", e);
+                throw new CompilerException(context, "File " + context.getCurrentSourcePath() + " ended in incomplete preprocessing token", e);
             }
         }
 
@@ -57,7 +57,7 @@ public class Tokenizer {
             return nextChar;
         }
 
-        throw new CompilerException(
+        throw new CompilerException(context,
                 "Unsure of token: "
                 + context.getCurrentSourcePath()
                 + ":"
@@ -76,7 +76,7 @@ public class Tokenizer {
         return switch (nextTwo) {
             case "//" -> commentUntilNewline(workingContents, i, context);
             case "/*" -> commentUntilDelimiter(tokens, workingContents, i, context);
-            case "*/" -> throw new CompilerException("Unmatched multiline comment end delimiter: " + context.getCurrentSourcePath() + ":" + i);
+            case "*/" -> throw new CompilerException(context, "Unmatched multiline comment end delimiter: " + context.getCurrentSourcePath() + ":" + i);
 
             default -> -1;
         };
@@ -108,7 +108,7 @@ public class Tokenizer {
             ++j;
         }
 
-        throw new CompilerException("Unmatched multiline comment begin delimiter: " + context.getCurrentSourcePath() + ":" + i);
+        throw new CompilerException(context, "Unmatched multiline comment begin delimiter: " + context.getCurrentSourcePath() + ":" + i);
     }
 
 
@@ -134,7 +134,7 @@ public class Tokenizer {
         int startName = i;
         while (i < workingContents.length() && workingContents.charAt(i) != stopChar) {
             if (workingContents.charAt(i) == '\n') {
-                throw new CompilerException("Incomplete header name: " + context.getCurrentSourcePath() + ":" + i);
+                throw new CompilerException(context, "Incomplete header name: " + context.getCurrentSourcePath() + ":" + i);
             }
 
             ++i;

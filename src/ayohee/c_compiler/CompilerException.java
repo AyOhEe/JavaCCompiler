@@ -1,13 +1,13 @@
 package ayohee.c_compiler;
 
 public class CompilerException extends Exception {
-    public CompilerException() {
-        super();
+    public CompilerException(PreprocessingContext context) {
+        super("Undescribed error occured in " + context.getCurrentSourcePath() + ":" + context.getLineNumber() + " while compiling " + context.getOriginalSourcePath());
     }
-    public CompilerException(String reason) {
-        super(reason);
+    public CompilerException(PreprocessingContext context, String reason) {
+        super("Error occured in " + context.getCurrentSourcePath() + ":" + context.getLineNumber() + " while compiling " + context.getOriginalSourcePath() + ": " + reason);
     }
-    public CompilerException(String reason, Throwable cause) {
-        super(reason, cause);
+    public CompilerException(PreprocessingContext context, String reason, Throwable cause) {
+        super("Error occured in " + context.getCurrentSourcePath() + ":" + context.getLineNumber() + " while compiling " + context.getOriginalSourcePath() + ": " + reason, cause);
     }
 }

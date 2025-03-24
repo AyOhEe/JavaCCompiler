@@ -7,15 +7,15 @@ public class FunctionLikePreprocessorDefinition extends PreprocessorDefinition{
     List<String> argumentNames;
     private List<PreprocessingToken> replacementList;
 
-    public FunctionLikePreprocessorDefinition(List<PreprocessingToken> statement) throws CompilerException {
-        int replacementListBegin = extractArgumentList(statement);
+    public FunctionLikePreprocessorDefinition(List<PreprocessingToken> statement, PreprocessingContext context) throws CompilerException {
+        int replacementListBegin = extractArgumentList(statement, context);
         extractReplacementList(statement, replacementListBegin);
     }
 
-    private int extractArgumentList(List<PreprocessingToken> statement) throws CompilerException {
+    private int extractArgumentList(List<PreprocessingToken> statement, PreprocessingContext context) throws CompilerException {
         if (!statement.getFirst().is(PreprocessingToken.TokenType.FUNCTIONLIKE_MACRO_DEFINITION)
             || !statement.get(1).is("(")) {
-            throw new CompilerException("Invalid function-like macro definition");
+            throw new CompilerException(context, "Invalid function-like macro definition");
         }
 
         boolean expectingComma = false;
@@ -32,14 +32,14 @@ public class FunctionLikePreprocessorDefinition extends PreprocessorDefinition{
                 expectingComma = false;
                 continue;
             } else if (!expectingComma && currentToken.is(",")) {
-                throw new CompilerException("Improperly formed function-like macro definition");
+                throw new CompilerException(context, "Improperly formed function-like macro definition");
             }
 
             if (!expectingComma && currentToken.is(PreprocessingToken.TokenType.IDENTIFIER)) {
                 argumentNames.addLast(currentToken.toString());
                 expectingComma = true;
             } else if (expectingComma && currentToken.is(PreprocessingToken.TokenType.IDENTIFIER)) {
-                throw new CompilerException("Improperly formed function-like macro definition");
+                throw new CompilerException(context, "Improperly formed function-like macro definition");
             }
         }
 
@@ -56,9 +56,9 @@ public class FunctionLikePreprocessorDefinition extends PreprocessorDefinition{
     }
 
     @Override
-    public void replaceInstances(String label, List<PreprocessingToken> tokens, int i) throws CompilerException {
+    public boolean  replaceInstances(String label, List<PreprocessingToken> tokens, int i) throws CompilerException {
         if (!tokens.get(i).is(label) || (tokens.size() > i + 1 && !tokens.get(i + 1).is("("))) {
-            return;
+            return false;
         }
         tokens.remove(i); // identifier
         tokens.remove(i); // '('
@@ -72,7 +72,7 @@ public class FunctionLikePreprocessorDefinition extends PreprocessorDefinition{
         List<PreprocessingToken> replacement = generateReplacement(argumentTokens);
         tokens.addAll(i, replacement);
 
-        System.out.println("Function-like invocation: " + label);
+        return true;
     }
 
     private int extractArgumentsFromInvocation(List<List<PreprocessingToken>> argumentTokens, List<PreprocessingToken> tokens, int i) {

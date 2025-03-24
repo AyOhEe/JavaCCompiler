@@ -11,11 +11,15 @@ public class ObjectLikePreprocessorDefinition extends PreprocessorDefinition{
     }
 
     @Override
-    public void replaceInstances(String label, List<PreprocessingToken> tokens, int i) throws CompilerException {
+    public boolean replaceInstances(String label, List<PreprocessingToken> tokens, int i) throws CompilerException {
         if (tokens.get(i).is(label)) {
             tokens.remove(i);
             tokens.addAll(i, replacementList);
+
+            return true;
         }
+
+        return false;
     }
 
     @Override
