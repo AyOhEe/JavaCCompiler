@@ -252,51 +252,10 @@ public class Preprocessor {
     }
 
     private static void evalConstantExpressions(List<PreprocessingToken> condition, PreprocessingContext context) throws CompilerException {
-        for (int i = 0; i < condition.size(); ++i) {
-            if (condition.get(i).is(PreprocessingToken.TokenType.IDENTIFIER)) {
-                condition.set(i, new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, "0"));
-            }
-        }
+        PreprocessorConstExpr constExpr = new PreprocessorConstExpr(condition, context);
 
-        //-----ORDER OF OPERATIONS-----
-        //(expr)
-        //unary ~, unary +, unary -, unary !
-        //*, /, %
-        //binary +, binary -
-        //<<, >>
-        //<, >
-        //==, !=
-        //&, ^, |
-        //&&, ||
-        //?:
-
-        for (PreprocessingToken token : condition) {
-            if (!token.is(PreprocessingToken.TokenType.PP_NUMBER)
-             && !token.is(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR)) {
-                throw new CompilerException(context, "Invalid token in constant expression: " + token.toString());
-            }
-
-            if (token.is(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR) && !isValidOperator(token.toString())) {
-                throw new CompilerException(context, "Invalid operator in constant expression: " + token.toString());
-            }
-        }
-
-        //TODO this
-    }
-
-    private static boolean isValidOperator(String operator) {
-        return switch (operator) {
-            case "(", ")" -> true;
-            case "~", "+", "-", "!" -> true;
-            case "*", "/", "%" -> true;
-            case "<<", ">>", "<", ">" -> true;
-            case "==", "!=" -> true;
-            case "&", "^", "|" -> true;
-            case "&&", "||" -> true;
-            case "?", ":" -> true;
-
-            default -> false;
-        };
+        condition.clear();
+        condition.add(constExpr.evaluate(context));
     }
 
     private static int findNearestIfClauseNewline(List<PreprocessingToken> tokens, int i, PreprocessingContext context) throws CompilerException {
