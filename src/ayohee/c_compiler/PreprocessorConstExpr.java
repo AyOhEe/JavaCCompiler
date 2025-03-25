@@ -44,22 +44,28 @@ public class PreprocessorConstExpr {
     }
 
     public PreprocessingToken evaluate(PreprocessingContext context) throws CompilerException {
-        return root.evaluate();
+        return new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, root.evaluate().toString());
     }
 
     private class ConstExprTreeNode {
         private ConstExprTreeNode left;
         private ConstExprTreeNode right;
-        private PreprocessingToken value;
+        private Number value;
+        private String operator;
 
-        public ConstExprTreeNode(ConstExprTreeNode _left, ConstExprTreeNode _right, PreprocessingToken _value) {
+        public ConstExprTreeNode(ConstExprTreeNode _left, ConstExprTreeNode _right, Number _value) {
             left = _left;
             right = _right;
             value = _value;
         }
+        public ConstExprTreeNode(ConstExprTreeNode _left, ConstExprTreeNode _right, String _operator) {
+            left = _left;
+            right = _right;
+            operator = _operator;
+        }
 
-        public PreprocessingToken evaluate() {
-            if (value.is(PreprocessingToken.TokenType.PP_NUMBER)) {
+        public Number evaluate() {
+            if (operator == null) {
                 return value;
             }
 
@@ -69,9 +75,7 @@ public class PreprocessorConstExpr {
                 return ternary();
             }
 
-            PreprocessingToken leftVal = left.evaluate();
-            PreprocessingToken rightVal = right.evaluate();
-            if (!leftVal.is(PreprocessingToken.TokenType.PP_NUMBER) || !rightVal.is(PreprocessingToken.TokenType.PP_NUMBER)) {
+            if (left.operator != null || right.operator != null) {
                 throw new IllegalStateException("Attempted to apply operator to another operator: " + left + ", " + operator + ", " + right);
             }
 
@@ -99,10 +103,12 @@ public class PreprocessorConstExpr {
             };
         }
 
-        private PreprocessingToken unaryBinaryNot() {
+        private Number unaryBinaryNot() {
+            Number rightVal = right.evaluate();
+            return ~(rightVal.intValue());
         }
 
-        private PreprocessingToken plus() {
+        private Number plus() {
             if (left == null) {
                 return unaryPlus();
             } else {
@@ -110,13 +116,26 @@ public class PreprocessorConstExpr {
             }
         }
 
-        private PreprocessingToken unaryPlus() {
+        private Number unaryPlus() {
+            return right.evaluate();
         }
 
-        private PreprocessingToken binaryPlus() {
+        private Number binaryPlus() {
+            Number leftVal = left.evaluate();
+            Number rightVal = right.evaluate();
+
+            if ((leftVal instanceof Double) || (rightVal instanceof Double)) {
+                return leftVal.doubleValue() + rightVal.doubleValue();
+            } else if ((leftVal instanceof Float) || (rightVal instanceof Float)) {
+                return leftVal.floatValue() + rightVal.floatValue();
+            } else if ((leftVal instanceof Integer) && (rightVal instanceof Integer)) {
+                return leftVal.intValue() + rightVal.intValue();
+            } else {
+                throw new IllegalStateException("Evaluated numbers apparently are not double, float, or int");
+            }
         }
 
-        private PreprocessingToken minus() {
+        private Number minus() {
             if (left == null) {
                 return unaryMinus();
             } else {
@@ -124,58 +143,170 @@ public class PreprocessorConstExpr {
             }
         }
 
-        private PreprocessingToken unaryMinus() {
+        private Number unaryMinus() {
+            Number rightVal = right.evaluate();
+
+            if (rightVal instanceof Double) {
+                return -rightVal.doubleValue();
+            } else if (rightVal instanceof Float) {
+                return -rightVal.floatValue();
+            } else if (rightVal instanceof Integer) {
+                return -rightVal.intValue();
+            } else {
+                throw new IllegalStateException("Evaluated number apparently are not double, float, or int");
+            }
         }
 
-        private PreprocessingToken binaryMinus() {
+        private Number binaryMinus() {
+            Number leftVal = left.evaluate();
+            Number rightVal = right.evaluate();
+
+            if ((leftVal instanceof Double) || (rightVal instanceof Double)) {
+                return leftVal.doubleValue() - rightVal.doubleValue();
+            } else if ((leftVal instanceof Float) || (rightVal instanceof Float)) {
+                return leftVal.floatValue() - rightVal.floatValue();
+            } else if ((leftVal instanceof Integer) && (rightVal instanceof Integer)) {
+                return leftVal.intValue() - rightVal.intValue();
+            } else {
+                throw new IllegalStateException("Evaluated numbers apparently are not double, float, or int");
+            }
         }
 
-        private PreprocessingToken unaryBooleanNot() {
+        private Number unaryBooleanNot() {
+            Number rightVal = right.evaluate();
+            return asBool(rightVal) ? 0 : 1;
         }
 
-        private PreprocessingToken binaryMult() {
+        private Number binaryMult() {
+            Number leftVal = left.evaluate();
+            Number rightVal = right.evaluate();
+
+            if ((leftVal instanceof Double) || (rightVal instanceof Double)) {
+                return leftVal.doubleValue() * rightVal.doubleValue();
+            } else if ((leftVal instanceof Float) || (rightVal instanceof Float)) {
+                return leftVal.floatValue() * rightVal.floatValue();
+            } else if ((leftVal instanceof Integer) && (rightVal instanceof Integer)) {
+                return leftVal.intValue() * rightVal.intValue();
+            } else {
+                throw new IllegalStateException("Evaluated numbers apparently are not double, float, or int");
+            }
         }
 
-        private PreprocessingToken binaryDiv() {
+        private Number binaryDiv() {
+            Number leftVal = left.evaluate();
+            Number rightVal = right.evaluate();
+
+            if ((leftVal instanceof Double) || (rightVal instanceof Double)) {
+                return leftVal.doubleValue() / rightVal.doubleValue();
+            } else if ((leftVal instanceof Float) || (rightVal instanceof Float)) {
+                return leftVal.floatValue() / rightVal.floatValue();
+            } else if ((leftVal instanceof Integer) && (rightVal instanceof Integer)) {
+                return leftVal.intValue() / rightVal.intValue();
+            } else {
+                throw new IllegalStateException("Evaluated numbers apparently are not double, float, or int");
+            }
         }
 
-        private PreprocessingToken binaryMod() {
+        private Number binaryMod() {
+            Number leftVal = left.evaluate();
+            Number rightVal = right.evaluate();
+
+            if ((leftVal instanceof Double) || (rightVal instanceof Double)) {
+                return leftVal.doubleValue() % rightVal.doubleValue();
+            } else if ((leftVal instanceof Float) || (rightVal instanceof Float)) {
+                return leftVal.floatValue() % rightVal.floatValue();
+            } else if ((leftVal instanceof Integer) && (rightVal instanceof Integer)) {
+                return leftVal.intValue() % rightVal.intValue();
+            } else {
+                throw new IllegalStateException("Evaluated numbers apparently are not double, float, or int");
+            }
         }
 
-        private PreprocessingToken binaryBSL() {
+        private Number binaryBSL() {
+            return (left.evaluate().intValue()) << (right.evaluate().intValue());
         }
 
-        private PreprocessingToken binaryBSR() {
+        private Number binaryBSR() {
+            return (left.evaluate().intValue()) >> (right.evaluate().intValue());
         }
 
-        private PreprocessingToken binaryLT() {
+        private Number binaryLT() {
+            if (left.evaluate().doubleValue() < right.evaluate().doubleValue()) {
+                return 1;
+            } else {
+                return 0;
+            }
         }
 
-        private PreprocessingToken binaryGT() {
+        private Number binaryGT() {
+            if (left.evaluate().doubleValue() > right.evaluate().doubleValue()) {
+                return 1;
+            } else {
+                return 0;
+            }
         }
 
-        private PreprocessingToken binaryEq() {
+        private Number binaryEq() {
+            if (left.evaluate().doubleValue() == right.evaluate().doubleValue()) {
+                return 1;
+            } else {
+                return 0;
+            }
         }
 
-        private PreprocessingToken binaryNeq() {
+        private Number binaryNeq() {
+            if (left.evaluate().doubleValue() != right.evaluate().doubleValue()) {
+                return 1;
+            } else {
+                return 0;
+            }
         }
 
-        private PreprocessingToken binaryAnd() {
+        private Number binaryAnd() {
+            return (left.evaluate().intValue()) & (right.evaluate().intValue());
         }
 
-        private PreprocessingToken binaryXor() {
+        private Number binaryXor() {
+            return (left.evaluate().intValue()) ^ (right.evaluate().intValue());
         }
 
-        private PreprocessingToken binaryOr() {
+        private Number binaryOr() {
+            return (left.evaluate().intValue()) | (right.evaluate().intValue());
         }
 
-        private PreprocessingToken booleanAnd() {
+        private Number booleanAnd() {
+            return (asBool(left.evaluate()) && asBool(right.evaluate())) ? 1 : 0;
         }
 
-        private PreprocessingToken booleanOr() {
+        private Number booleanOr() {
+            return (asBool(left.evaluate()) || asBool(right.evaluate())) ? 1 : 0;
         }
 
-        private PreprocessingToken ternary() {
+        private Number ternary() {
+            if (!right.operator.contentEquals(":")) {
+                throw new IllegalArgumentException("? operator with no matching :");
+            }
+
+            if (asBool(left.evaluate())) {
+                return right.left.evaluate();
+            } else {
+                return right.right.evaluate();
+            }
+        }
+
+
+        private static int parseInt(String s) {
+            if (s.startsWith("0x")) {
+                return Integer.parseInt(s.substring(2), 16);
+            }
+            if (s.startsWith("0b")) {
+                return Integer.parseInt(s.substring(2), 2);
+            }
+            return Integer.parseInt(s);
+        }
+
+        private static boolean asBool(Number n) {
+            return n.doubleValue() != 0.0;
         }
     }
 
