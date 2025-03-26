@@ -1,6 +1,5 @@
 package ayohee.c_compiler;
 
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -162,14 +161,14 @@ public class Preprocessor {
 
     private static String ensureEOFNewline(String fileContents, PreprocessingContext context) throws CompilerException {
         if (fileContents.endsWith("\\\n")) {
-            throw new CompilerException(context, "Backslash-newline at end of file: " + context.getCurrentSourcePath());
+            throw new CompilerException(context, "Backslash-newline at end of file");
         }
         if (fileContents.isBlank() || fileContents.endsWith("\n")) {
             return fileContents;
         }
 
         if (fileContents.endsWith("\\")) {
-            throw new CompilerException(context, "Backslash-newline at end of file: " + context.getCurrentSourcePath());
+            throw new CompilerException(context, "Backslash-newline at end of file");
         } else {
             return fileContents + '\n';
         }
@@ -189,16 +188,20 @@ public class Preprocessor {
             if (i + 1 < tokens.size() && tokens.get(i + 1).is(PreprocessingToken.TokenType.IDENTIFIER)) {
                 return executeDirective(tokens, includePaths, i + 1, context);
             } else {
-                throw new CompilerException(context, "Invalid preprocessing directive: " + context.getCurrentSourcePath());
+                throw new CompilerException(context, "Invalid preprocessing directive");
             }
         }
 
-        context.doReplacement(tokens, i, true);
+        int delta = context.doReplacement(tokens, i, true);
         if (currentToken.is(PreprocessingToken.TokenType.NEWLINE)) {
             context.incrementLineNumber();
         }
 
-        return i + 1;
+        if (delta == -1) {
+            return i;
+        } else {
+            return i + 1;
+        }
     }
 
     private static int executeDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
@@ -207,7 +210,6 @@ public class Preprocessor {
         tokens.remove(i - 1); //hashtag
         //leaving the first token afterwards now at i - 1
 
-        //TODO line counting
         return switch (token.toString()) {
             case "if" -> ifDirective(tokens, includePaths, i - 1, context);
             case "ifdef" -> ifdefDirective(tokens, includePaths, i - 1, context);
@@ -316,7 +318,7 @@ public class Preprocessor {
     private static int ifdefDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
         PreprocessingToken token = tokens.remove(i);
         if (!token.is(PreprocessingToken.TokenType.IDENTIFIER)) {
-            throw new CompilerException(context, "#ifdef statement without valid identifier: " + context.getCurrentSourcePath());
+            throw new CompilerException(context, "#ifdef statement without valid identifier");
         }
 
         List<PreprocessingToken> newIfDirective = new ArrayList<>();
@@ -335,7 +337,7 @@ public class Preprocessor {
     private static int ifndefDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
         PreprocessingToken token = tokens.remove(i);
         if (!token.is(PreprocessingToken.TokenType.IDENTIFIER)) {
-            throw new CompilerException(context, "#ifndef statement without valid identifier: " + context.getCurrentSourcePath());
+            throw new CompilerException(context, "#ifndef statement without valid identifier");
         }
 
         List<PreprocessingToken> newIfDirective = new ArrayList<>();
@@ -353,21 +355,21 @@ public class Preprocessor {
     }
 
     private static int elifDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
-        throw new CompilerException(context, "Unmatched #elif directive: " + context.getCurrentSourcePath());
+        throw new CompilerException(context, "Unmatched #elif directive");
     }
 
     private static int elseDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
-        throw new CompilerException(context, "Unmatched #else directive: " + context.getCurrentSourcePath());
+        throw new CompilerException(context, "Unmatched #else directive");
     }
 
     private static int endifDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
-        throw new CompilerException(context, "Unmatched #endif directive: " + context.getCurrentSourcePath());
+        throw new CompilerException(context, "Unmatched #endif directive");
     }
 
     private static int includeDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
         PreprocessingToken headerName = tokens.remove(i);
         if (!headerName.is(PreprocessingToken.TokenType.HEADER_NAME)) {
-            throw new CompilerException(context, "#include directive not followed by valid header name: " + context.getCurrentSourcePath());
+            throw new CompilerException(context, "#include directive not followed by valid header name");
         }
 
         boolean isQHeader = headerName.toString().startsWith("\"");
@@ -395,7 +397,7 @@ public class Preprocessor {
 
         //TODO check built in. no built-in headers currently exist.
 
-        throw new CompilerException(context, "Attempted to include nonexistent file: " + headerPath + " in " + context.getCurrentSourcePath());
+        throw new CompilerException(context, "Attempted to include nonexistent file: " + headerPath);
     }
 
     private static int includeHHeader(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context, String headerPath) throws CompilerException {
@@ -408,7 +410,7 @@ public class Preprocessor {
             }
         }
 
-        throw new CompilerException(context, "Attempted to include nonexistent file: " + headerPath + " in " + context.getCurrentSourcePath());
+        throw new CompilerException(context, "Attempted to include nonexistent file: " + headerPath);
     }
 
     private static boolean tryIncludeFile(Path resolved, List<PreprocessingToken> tokens, int i, List<Path> includePaths, PreprocessingContext context) throws CompilerException {
@@ -416,8 +418,9 @@ public class Preprocessor {
             return false;
         }
 
-        //TODO line directives
-        String contents = readFileToString(resolved);
+        String initialLineDirective = "#line 1 \"" + Tokenizer.inverseEscapeStringLiteral(resolved.toString()) + "\"\n";
+        String followingLineDirective = "\n#line " + (context.getLineNumber() + 1) + " \"" + context.getCurrentFileName() + "\"\n";
+        String contents = initialLineDirective + readFileToString(resolved) + followingLineDirective;
         tokens.addAll(i, preprocessString(resolved, contents, includePaths, context));
         return true;
     }
@@ -430,22 +433,40 @@ public class Preprocessor {
         } else if (label.is(PreprocessingToken.TokenType.IDENTIFIER)) {
             return context.defineObjectlike(tokens, i, context);
         } else {
-            throw new CompilerException(context, "Poorly formed #define directive in " + context.getCurrentSourcePath());
+            throw new CompilerException(context, "Poorly formed #define directive");
         }
     }
 
     private static int undefDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
         if (!tokens.get(i).is(PreprocessingToken.TokenType.IDENTIFIER)) {
-            throw new CompilerException(context, "Poorly formed #undef directive in " + context.getCurrentSourcePath());
+            throw new CompilerException(context, "Poorly formed #undef directive");
         }
         context.undefine(tokens.get(i).toString());
         tokens.remove(i);
         return i;
     }
 
-    private static int lineDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
-        //TODO this
-        return i + 1;
+    private static int lineDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
+        List<PreprocessingToken> args = extractUntilNewline(tokens, i);
+        if (args.isEmpty() || args.size() > 2) {
+            throw new CompilerException(context, "malformed #line directive");
+        }
+        if (!args.getFirst().is(PreprocessingToken.TokenType.PP_NUMBER)) {
+            throw new CompilerException(context, "#line directive did not have number as first argument");
+        }
+
+        int line = Integer.parseInt(args.getFirst().toString());
+        context.setLineNumber(line);
+
+        if (args.size() == 2) {
+            if (args.get(1).is(PreprocessingToken.TokenType.STRING_LIT)) {
+                context.setCurrentFileName(args.get(1).unescapedString());
+            } else {
+                throw new CompilerException(context, "#line directive did not have string literal as second argument");
+            }
+        }
+
+        return i;
     }
 
     private static int errorDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
@@ -462,11 +483,11 @@ public class Preprocessor {
         //pragma directives currently do nothing and are entirely ignored
         extractUntilNewline(tokens, i);
 
-        return i + 1;
+        return i;
     }
 
     private static int invalidDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context, PreprocessingToken token) throws CompilerException {
-        throw new CompilerException(context, "Invalid preprocessing directive in: " + context.getCurrentSourcePath() + ": found directive " + token.toString());
+        throw new CompilerException(context, "Invalid preprocessing directive. found directive " + token.toString());
     }
 
 

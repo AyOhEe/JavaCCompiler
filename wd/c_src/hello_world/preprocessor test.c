@@ -36,6 +36,8 @@ form \
 one \
 line
 
+another random thing on line __LINE__
+
 single line comments:
 //comment
 comment right after a line;//just like this
@@ -64,6 +66,8 @@ Should not show up
 
 #endif
 
+another random thing on line __LINE__
+
 #define TEST
 #ifdef TEST
 Should not appear if the below does
@@ -86,7 +90,9 @@ Should not appear if the above does
 #define FUNCTION_LIKE3(foo,asjahflahfawff) (foo + foo)
 #define TEST_DEFINITION
 
+another random thing on line __LINE__
 TEST_DEFINITION
+another random thing on line __LINE__
 
 #undef TEST_DEFINITION
 
@@ -94,6 +100,7 @@ TEST_DEFINITION
 
 #pragma this should all be ignored
 
+another random thing on line __LINE__
 int main() {
     //FUNCTION_LIKE1(2);
     FUNCTION_LIKE1(2, (3, 4));
@@ -102,6 +109,7 @@ int main() {
 }
 
 "random\t string literal on line __LINE__"
+another random thing on line __LINE__
 
 #define A_THING
 
@@ -111,3 +119,4 @@ but still well-formed
 
 //#error this should just accept a plaintext error message instead of it having to be a string now. \
 and hell, it should even work across lines
+another random thing on line __LINE__

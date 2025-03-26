@@ -13,6 +13,7 @@ public class PreprocessingContext {
 
     private HashMap<String, PreprocessorDefinition> macros = new HashMap<>();
     private Stack<Path> fileStack;
+    private String currentFileName;
     private Path originalSourcePath;
     private boolean yesMode;
     private boolean verbose;
@@ -93,7 +94,9 @@ public class PreprocessingContext {
         return String.format("\"%02d:%02d:%02d\"", compilationStart.getHour(), compilationStart.getMinute(), compilationStart.getSecond());
     }
 
-    public void doReplacement(List<PreprocessingToken> tokens, int i, boolean singleToken) throws CompilerException {
+    public int doReplacement(List<PreprocessingToken> tokens, int i, boolean singleToken) throws CompilerException {
+        int lengthBefore = tokens.size();
+
         boolean wasUpdated = true;
         int depth = 0;
         while (wasUpdated) {
@@ -114,6 +117,8 @@ public class PreprocessingContext {
             }
 
         }
+
+        return tokens.size() - lengthBefore;
     }
 
     private boolean replaceDefinitionCheck(List<PreprocessingToken> tokens, int i) {
@@ -138,10 +143,11 @@ public class PreprocessingContext {
 
     public void fileDeeper(Path nextFile) throws CompilerException {
         fileStack.push(nextFile);
+        currentFileName = fileStack.peek().toString();
 
         List<PreprocessingToken> tokens = new ArrayList<>();
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "__FILE__"));
-        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, fileStack.peek().toString()));
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, currentFileName));
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
         defineObjectlike(tokens, 0, this, true);
 
@@ -151,13 +157,17 @@ public class PreprocessingContext {
     }
     public void fileOut() throws CompilerException {
         fileStack.pop();
-        String name = fileStack.empty() ? "\"UNKNOWN\"" : fileStack.peek().toString();
+        currentFileName = fileStack.empty() ? "\"UNKNOWN\"" : fileStack.peek().toString();
 
         List<PreprocessingToken> tokens = new ArrayList<>();
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "__FILE__"));
-        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, name));
+        tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, currentFileName));
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
         defineObjectlike(tokens, 0, this, true);
+
+        if (fileStack.empty()) {
+            lineNumber = 1;
+        }
     }
 
     public Path getOriginalSourcePath() {
@@ -166,6 +176,10 @@ public class PreprocessingContext {
 
     public Path getCurrentSourcePath() {
         return fileStack.peek();
+    }
+
+    public String getCurrentFileName() {
+        return currentFileName;
     }
 
     public boolean isVerbose() {
@@ -190,7 +204,7 @@ public class PreprocessingContext {
             macros.put(label.toString(), new ObjectLikePreprocessorDefinition(replacementList));
             return i;
         } else {
-            throw new CompilerException(this, "Tried to define macro with invalid name: \"" + label.toString() + "\"" + getCurrentSourcePath());
+            throw new CompilerException(this, "Tried to define macro with invalid name: \"" + label.toString());
         }
     }
 
@@ -206,7 +220,7 @@ public class PreprocessingContext {
             macros.put(label, new FunctionLikePreprocessorDefinition(statement, context));
             return i;
         } else {
-            throw new CompilerException(this, "Tried to define macro with invalid name \"" + label + "\"" + getCurrentSourcePath());
+            throw new CompilerException(this, "Tried to define macro with invalid name \"" + label + "\"");
         }
     }
 
@@ -214,7 +228,7 @@ public class PreprocessingContext {
         if (Preprocessor.isValidIdentifier(name, this)) {
             macros.remove(name);
         } else {
-            throw new CompilerException(this, "Tried to undefine macro with invalid name \"" + name + "\"" + getCurrentSourcePath());
+            throw new CompilerException(this, "Tried to undefine macro with invalid name \"" + name + "\"");
         }
     }
 
@@ -231,5 +245,9 @@ public class PreprocessingContext {
 
     public int getLineNumber() {
         return lineNumber;
+    }
+
+    public void setCurrentFileName(String n) {
+        currentFileName = n;
     }
 }
