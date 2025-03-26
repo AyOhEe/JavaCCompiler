@@ -449,17 +449,13 @@ public class Preprocessor {
     }
 
     private static int errorDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
-        //TODO use extractUntilNewline and conform to page 93
-        PreprocessingToken message = tokens.get(i);
-        if (message.is(PreprocessingToken.TokenType.NEWLINE)) {
-            //message is optional
-            message = new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, "");
+        List<PreprocessingToken> message = extractUntilNewline(tokens, i);
+        StringBuilder sb = new StringBuilder();
+        for (PreprocessingToken token : message) {
+            sb.append(token.toString()).append(" ");
         }
 
-        if (message.is(PreprocessingToken.TokenType.STRING_LIT)) {
-            throw new CompilerException(context, "#error directive in " + context.getCurrentSourcePath() + ": " + message.unescapedString());
-        }
-        throw new CompilerException(context, "Poorly formed #error directive in " + context.getCurrentSourcePath());
+        throw new CompilerException(context, "#error directive: " + sb.toString());
     }
 
     private static int pragmaDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {

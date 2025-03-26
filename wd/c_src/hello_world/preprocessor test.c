@@ -108,3 +108,6 @@ int main() {
 //continued lines \
 at the end again \
 but still well-formed
+
+//#error this should just accept a plaintext error message instead of it having to be a string now. \
+and hell, it should even work across lines
