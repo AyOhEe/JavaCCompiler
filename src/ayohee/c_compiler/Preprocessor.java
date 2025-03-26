@@ -496,7 +496,7 @@ public class Preprocessor {
 
     public static List<PreprocessingToken> extractUntilNewline(List<PreprocessingToken> tokens, int i) {
         List<PreprocessingToken> extracted = new ArrayList<>();
-        for (; i < tokens.size(); ++i) {
+        while (i < tokens.size()) {
             if (tokens.get(i).is(PreprocessingToken.TokenType.NEWLINE)) {
                 break;
             }
