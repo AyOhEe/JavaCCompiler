@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-//TODO double check when i'm supposed to read all tokens until a newline, because i don't think i'm doing that
 
 public class Preprocessor {
     public static List<Path> preprocess(List<Path> sourceFiles, List<Path> includePaths, Path ctxPath, Path ppOutputPath, boolean yesMode, boolean verbose) throws CompilerException {
