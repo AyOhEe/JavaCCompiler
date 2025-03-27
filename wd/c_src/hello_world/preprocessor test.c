@@ -120,3 +120,7 @@ but still well-formed
 //#error this should just accept a plaintext error message instead of it having to be a string now. \
 and hell, it should even work across lines
 another random thing on line __LINE__
+
+
+#line 10
+this should be 10 == __LINE__

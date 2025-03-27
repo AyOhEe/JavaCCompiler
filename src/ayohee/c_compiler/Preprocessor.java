@@ -375,10 +375,11 @@ public class Preprocessor {
         boolean isQHeader = headerName.toString().startsWith("\"");
         String headerAsString = headerName.toString();
         String headerPath = headerAsString.substring(1, headerAsString.length() - 1);
+        //insert at i + 1 to insert after the newline and preserve line numbering
         if (isQHeader) {
-            return includeQHeader(tokens, includePaths, i, context, headerPath);
+            return includeQHeader(tokens, includePaths, i + 1, context, headerPath);
         } else {
-            return includeHHeader(tokens, includePaths, i, context, headerPath);
+            return includeHHeader(tokens, includePaths, i + 1, context, headerPath);
         }
     }
 
@@ -418,10 +419,23 @@ public class Preprocessor {
             return false;
         }
 
-        String initialLineDirective = "#line 1 \"" + Tokenizer.inverseEscapeStringLiteral(resolved.toString()) + "\"\n";
-        String followingLineDirective = "\n#line " + (context.getLineNumber() + 1) + " \"" + context.getCurrentFileName() + "\"\n";
-        String contents = initialLineDirective + readFileToString(resolved) + followingLineDirective;
-        tokens.addAll(i, preprocessString(resolved, contents, includePaths, context));
+        List<PreprocessingToken> tokenised = preprocessString(resolved, readFileToString(resolved), includePaths, context);
+
+        //add in reverse order initially as we're inserting at the front - what we add first ends up getting pushed deeper
+        tokenised.add(0, new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
+        tokenised.add(0, new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, resolved.toString()));
+        tokenised.add(0, new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, "1"));
+        tokenised.add(0, new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "line"));
+        tokenised.add(0, new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, "#"));
+
+        //add in order now that we're adding to the end each time
+        tokenised.add(tokenised.size(), new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, "#"));
+        tokenised.add(tokenised.size(), new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "line"));
+        tokenised.add(tokenised.size(), new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, Integer.toString(context.getLineNumber())));
+        tokenised.add(tokenised.size(), new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, resolved.toString()));
+        tokenised.add(tokenised.size(), new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
+
+        tokens.addAll(i, tokenised);
         return true;
     }
 
@@ -447,7 +461,12 @@ public class Preprocessor {
     }
 
     private static int lineDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
-        List<PreprocessingToken> args = extractUntilNewline(tokens, i);
+        //line directives should be preserved in the .i output as they primarily serve to inform compiler errors
+        tokens.add(i, new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "line"));
+        tokens.add(i, new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, "#"));
+        i += 2; //don't read the directive itself
+
+        List<PreprocessingToken> args = extractUntilNewline(tokens, i, false);
         if (args.isEmpty() || args.size() > 2) {
             throw new CompilerException(context, "malformed #line directive");
         }
@@ -456,7 +475,7 @@ public class Preprocessor {
         }
 
         int line = Integer.parseInt(args.getFirst().toString());
-        context.setLineNumber(line);
+        context.setLineNumber(line - 1); //account for the newline. #line details the line number of the *following* line
 
         if (args.size() == 2) {
             if (args.get(1).is(PreprocessingToken.TokenType.STRING_LIT)) {
@@ -470,7 +489,7 @@ public class Preprocessor {
     }
 
     private static int errorDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) throws CompilerException {
-        List<PreprocessingToken> message = extractUntilNewline(tokens, i);
+        List<PreprocessingToken> message = extractUntilNewline(tokens, i, true);
         StringBuilder sb = new StringBuilder();
         for (PreprocessingToken token : message) {
             sb.append(token.toString()).append(" ");
@@ -481,7 +500,7 @@ public class Preprocessor {
 
     private static int pragmaDirective(List<PreprocessingToken> tokens, List<Path> includePaths, int i, PreprocessingContext context) {
         //pragma directives currently do nothing and are entirely ignored
-        extractUntilNewline(tokens, i);
+        extractUntilNewline(tokens, i, true);
 
         return i;
     }
@@ -511,14 +530,18 @@ public class Preprocessor {
     }
 
 
-    public static List<PreprocessingToken> extractUntilNewline(List<PreprocessingToken> tokens, int i) {
+    public static List<PreprocessingToken> extractUntilNewline(List<PreprocessingToken> tokens, int i, boolean remove) {
         List<PreprocessingToken> extracted = new ArrayList<>();
         while (i < tokens.size()) {
             if (tokens.get(i).is(PreprocessingToken.TokenType.NEWLINE)) {
                 break;
             }
 
-            extracted.add(tokens.remove(i));
+            if (remove) {
+                extracted.add(tokens.remove(i));
+            } else {
+                extracted.add(tokens.get(i++));
+            }
         }
 
         return extracted;
