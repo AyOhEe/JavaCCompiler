@@ -100,6 +100,12 @@ TEST_DEFINITION
 
 #pragma this should all be ignored
 
+
+#define token_paste_test(some_tokens) HEY_THESE_WERE_JOINED_##some_tokens
+token_paste_test(TOGETHER)
+#define stringizing_test(some_tokens) HEY_THIS_WERE_STRINGIZED #some_tokens
+stringizing_test(TOKEN and some other stuff     with long whitespace	and a tab)
+
 another random thing on line __LINE__
 int main() {
     //FUNCTION_LIKE1(2);
