@@ -418,20 +418,19 @@ public class Preprocessor {
             return false;
         }
 
-        List<PreprocessingToken> tokenised = preprocessString(resolved, readFileToString(resolved), includePaths, context);
+        //the line number and file will change after processing the file
+        int lineNumber = context.getLineNumber();
+        String originalFile = context.getCurrentFileName();
 
-        //add in reverse order initially as we're inserting at the front - what we add first ends up getting pushed deeper
-        tokenised.add(0, new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
-        tokenised.add(0, new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, resolved.toString()));
-        tokenised.add(0, new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, "1"));
-        tokenised.add(0, new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "line"));
-        tokenised.add(0, new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, "#"));
+        String contents = readFileToString(resolved);
+        contents = "# line 1\"" + Tokenizer.inverseEscapeStringLiteral(resolved.toString()) + "\"\n" + contents;
+        List<PreprocessingToken> tokenised = preprocessString(resolved, contents, includePaths, context);
 
         //add in order now that we're adding to the end each time
         tokenised.add(tokenised.size(), new PreprocessingToken(PreprocessingToken.TokenType.OPERATOR_PUNCTUATOR, "#"));
         tokenised.add(tokenised.size(), new PreprocessingToken(PreprocessingToken.TokenType.IDENTIFIER, "line"));
-        tokenised.add(tokenised.size(), new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, Integer.toString(context.getLineNumber())));
-        tokenised.add(tokenised.size(), new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, resolved.toString()));
+        tokenised.add(tokenised.size(), new PreprocessingToken(PreprocessingToken.TokenType.PP_NUMBER, Integer.toString(lineNumber + 1)));
+        tokenised.add(tokenised.size(), new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, originalFile));
         tokenised.add(tokenised.size(), new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
 
         tokens.addAll(i, tokenised);

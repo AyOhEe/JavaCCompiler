@@ -9,5 +9,5 @@ SUCCEEDED_NESTED
 
 
 int main() {
-    return ABC;
+    return ABC + __LINE__;
 }

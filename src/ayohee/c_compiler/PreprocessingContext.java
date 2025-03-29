@@ -151,6 +151,8 @@ public class PreprocessingContext {
         tokens.add(new PreprocessingToken(PreprocessingToken.TokenType.NEWLINE, "\n"));
         defineObjectlike(tokens, 0, this, true);
 
+        setLineNumber(1);
+
         if (fileStack.size() > MAX_FILE_DEPTH) {
             throw new CompilerException(this, "Maximum #include depth reached");
         }
