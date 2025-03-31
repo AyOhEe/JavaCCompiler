@@ -107,19 +107,72 @@ public class FunctionLikePreprocessorDefinition extends PreprocessorDefinition{
     private List<PreprocessingToken> generateReplacement(List<List<PreprocessingToken>> argumentTokens) {
         List<PreprocessingToken> replacement = new ArrayList<>(replacementList);
 
-        //TODO # operator - turn identifier into string lit
-        //TODO ## operator - join identifiers
-
         for (int i = 0; i < replacement.size(); ++i) {
+            if (replacement.get(i).is("#")) {
+                //subtract one to counteract the ++i at the end of the loop
+                i = processStringifyOperator(replacement, i, argumentTokens) - 1;
+                continue;
+            }
+            if (replacement.get(i).is("##")) {
+                //subtract one to counteract the ++i at the end of the loop
+                i = processTokenPasteOperator(replacement, i, argumentTokens) - 1;
+                continue;
+            }
+
             for (int j = 0; j < argumentNames.size(); ++j) {
                 if (replacement.get(i).is(argumentNames.get(j))) {
                     replacement.remove(i);
                     replacement.addAll(i, argumentTokens.get(j));
-                    --i; //stay on this token index: the -- and ++ cancel out.
+                    i += argumentTokens.get(j).size(); //jump ahead to skip the tokens we replaced
+                    --i; //but still counteract the ++i at the end of the loop
                 }
             }
         }
 
         return replacement;
+    }
+
+    private int processStringifyOperator(List<PreprocessingToken> replacement, int i, List<List<PreprocessingToken>> argumentTokens) {
+        //ensure next token exists
+        int targetIndex = i + 1;
+        if (targetIndex > replacement.size()) {
+            throw new IndexOutOfBoundsException("Stringify operator (#) at end of function-like invocation");
+        }
+
+        //find the corresponding argument
+        PreprocessingToken targetToken = replacement.get(targetIndex);
+        int argumentIndex = -1;
+        for (int j = 0; j < argumentNames.size(); ++j) {
+            if (targetToken.is(argumentNames.get(j))) {
+                argumentIndex = j;
+                break;
+            }
+        }
+        if (argumentIndex == -1) {
+            throw new IndexOutOfBoundsException("Stringify (#) argument was not a macro parameter");
+        }
+
+        //extract the argument and stringify it
+        List<PreprocessingToken> argument = argumentTokens.get(argumentIndex);
+        StringBuilder stringifyResult = new StringBuilder();
+
+        if (!argument.isEmpty()) {
+            stringifyResult.append(argument.getFirst());
+        }
+        for (int j = 1; j < argument.size(); ++j) {
+            stringifyResult.append(" ").append(argument.get(j).toString());
+        }
+
+        //append the result as a token
+        replacement.remove(i); // #
+        replacement.remove(i); // identifier
+        replacement.add(i, new PreprocessingToken(PreprocessingToken.TokenType.STRING_LIT, stringifyResult.toString()));
+
+        //start at the next token
+        return i + 1;
+    }
+
+    private int processTokenPasteOperator(List<PreprocessingToken> replacement, int i, List<List<PreprocessingToken>> argumentTokens) {
+        return i + 1;
     }
 }

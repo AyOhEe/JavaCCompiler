@@ -90,6 +90,9 @@ Should not appear if the above does
 #define FUNCTION_LIKE3(foo,asjahflahfawff) (foo + foo)
 #define TEST_DEFINITION
 
+FUNCTION_LIKE1(1, 1 + #foo) == (1 + 1 + #foo);
+FUNCTION_LIKE(, 1) == ( + 1)
+
 another random thing on line __LINE__
 TEST_DEFINITION
 another random thing on line __LINE__
@@ -105,6 +108,7 @@ TEST_DEFINITION
 token_paste_test(TOGETHER)
 #define stringizing_test(some_tokens) HEY_THIS_WERE_STRINGIZED #some_tokens
 stringizing_test(TOKEN and some other stuff     with long whitespace	and a tab)
+stringizing_test()
 
 another random thing on line __LINE__
 int main() {
